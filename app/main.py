@@ -232,6 +232,29 @@ async def upload_asset(pid: str, file: UploadFile) -> dict:
     return {"ok": True, "path": f"assets/{safe_name}", "url": f"/api/data/{pid}/assets/{safe_name}"}
 
 
+# ---------------------------------------------------------------- thumbnails
+
+@app.get("/api/projects/{pid}/thumbs/{scene_id}")
+def scene_thumb(pid: str, scene_id: str):
+    """Real frame per timeline block (cached by scene config hash)."""
+    from fastapi.responses import FileResponse
+
+    from .render import thumbs
+
+    scene_id = scene_id.removesuffix(".png")  # client requests the PNG filename
+    project = project_store.get_project(pid)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan.")
+    scene = next((s for s in project["scenes"] if s["id"] == scene_id), None)
+    if scene is None:
+        raise HTTPException(status_code=404, detail="Scene tidak ditemukan.")
+    try:
+        path = thumbs.ensure_thumb(pid, scene, project)
+    except Exception as exc:  # noqa: BLE001 - surface a clean message
+        raise HTTPException(status_code=500, detail=f"Thumbnail gagal: {exc}") from exc
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
 # ---------------------------------------------------------------- render
 
 @app.post("/api/projects/{pid}/render")

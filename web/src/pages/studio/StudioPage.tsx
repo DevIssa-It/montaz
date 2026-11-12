@@ -239,6 +239,7 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
       {/* Review timeline — reorder convenience, the pipeline does the rest */}
       <div className="shrink-0 px-3 pb-3">
         <Timeline
+          projectId={project.id}
           scenes={scenes}
           durations={durations}
           selectedId={selectedId}

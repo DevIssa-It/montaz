@@ -6,6 +6,7 @@ const PX_PER_SEC = 56
 const MIN_W = 64
 
 interface Props {
+  projectId: string
   scenes: Scene[]
   durations: Record<string, number>
   selectedId: string | null
@@ -21,7 +22,7 @@ type DragState = { from: number; over: number; side: "left" | "right" } | null
  * each scene block is as wide as its narration duration; drag blocks to
  * reorder. The pipeline (scriptgen -> capture -> render) does the rest.
  */
-export function Timeline({ scenes, durations, selectedId, onSelect, onReorder, bgmEnabled }: Props) {
+export function Timeline({ projectId, scenes, durations, selectedId, onSelect, onReorder, bgmEnabled }: Props) {
   const [drag, setDrag] = useState<DragState>(null)
 
   const widths = useMemo(
@@ -92,21 +93,31 @@ export function Timeline({ scenes, durations, selectedId, onSelect, onReorder, b
                 onKeyDown={(e) => e.key === "Enter" && onSelect(scene.id)}
                 title={scene.title}
                 style={{ width: w }}
-                className={`group relative cursor-grab overflow-hidden rounded-md border px-2 py-1 transition-colors active:cursor-grabbing ${
+                className={`group relative cursor-grab overflow-hidden rounded-md border transition-colors active:cursor-grabbing ${
                   scene.id === selectedId
-                    ? "border-primary bg-muted"
-                    : "border-border bg-muted/50 hover:border-input"
+                    ? "border-primary"
+                    : "border-border hover:border-input"
                 } ${dropLeft ? "border-l-2 border-l-primary" : ""} ${dropRight ? "border-r-2 border-r-primary" : ""} ${
                   isDragging ? "opacity-40" : ""
                 }`}
               >
-                <p className="truncate text-[11px] font-medium text-foreground">
-                  <span className="timecode mr-1">{String(i + 1).padStart(2, "0")}</span>
-                  {scene.title || "Untitled"}
-                </p>
-                <p className="timecode mt-0.5">
-                  {scene.visual.type} · {(durations[scene.id] ?? estimateSeconds(scene)).toFixed(1)}s
-                </p>
+                {/* real frame from the server (card render / browser shot / video frame) */}
+                <img
+                  src={`/api/projects/${projectId}/thumbs/${scene.id}.png`}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+                <div className="relative flex h-14 flex-col justify-end px-2 py-1">
+                  <p className="truncate text-[11px] font-medium text-foreground">
+                    <span className="timecode mr-1">{String(i + 1).padStart(2, "0")}</span>
+                    {scene.title || "Untitled"}
+                  </p>
+                  <p className="timecode mt-0.5">
+                    {scene.visual.type} · {(durations[scene.id] ?? estimateSeconds(scene)).toFixed(1)}s
+                  </p>
+                </div>
               </div>
             )
           })}

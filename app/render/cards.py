@@ -112,6 +112,30 @@ def render_card(kind: str, heading: str, bullets: list[str], out_path: Path) -> 
     return out_path
 
 
+def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Path:
+    """Single terminal-window frame (for timeline thumbnails)."""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    tx0, ty0, tx1, ty1 = 140, 220, W - 140, H - 180
+    draw.rounded_rectangle([tx0, ty0, tx1, ty1], radius=12, fill=TERM_BG, outline=BORDER, width=2)
+    for i, color in enumerate(((239, 68, 68), (245, 158, 11), (34, 197, 94))):
+        cx = tx0 + 44 + i * 44
+        draw.ellipse([cx, ty0 + 28, cx + 20, ty0 + 48], fill=color)
+    draw.text((tx1 - 330, ty0 + 20), "demo — terminal", font=font("mono", 30), fill=MUTED)
+    mono = font("mono", 42)
+    draw.text((tx0 + 56, ty0 + 104), f"$ {command}", font=mono, fill=TEXT)
+    ly = ty0 + 188
+    for line in lines[:8]:
+        for wrap_line in _wrap(draw, line, mono, tx1 - tx0 - 112)[:2]:
+            draw.text((tx0 + 56, ly), wrap_line, font=mono, fill=MUTED)
+            ly += 58
+        if ly > ty1 - 60:
+            break
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    return out_path
+
+
 def render_terminal_frames(command: str, lines: list[str], out_dir: Path, total_seconds: float, fps: int = 10) -> Path:
     """Progressive-reveal terminal window; returns the frames directory.
 
