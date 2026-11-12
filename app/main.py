@@ -232,6 +232,23 @@ async def upload_asset(pid: str, file: UploadFile) -> dict:
     return {"ok": True, "path": f"assets/{safe_name}", "url": f"/api/data/{pid}/assets/{safe_name}"}
 
 
+# ---------------------------------------------------------------- native picker
+
+@app.post("/api/system/pick-folder")
+def pick_folder() -> dict:
+    """Open the OS folder dialog on the user's screen and return the path."""
+    from . import system_picker
+
+    if not system_picker.try_lock():
+        raise HTTPException(status_code=409, detail="Folder picker sudah terbuka.")
+    try:
+        return {"path": system_picker.pick_folder()}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        system_picker.release()
+
+
 # ---------------------------------------------------------------- thumbnails
 
 @app.get("/api/projects/{pid}/thumbs/{scene_id}")

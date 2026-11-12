@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -36,7 +36,9 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
   const [folder, setFolder] = useState("")
   const [appUrl, setAppUrl] = useState("")
   const [creating, setCreating] = useState(false)
+  const [picking, setPicking] = useState(false)
   const [polish, setPolish] = useState(false)
+  const pickAbort = useRef<AbortController | null>(null)
   const [genBusy, setGenBusy] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
 
@@ -45,6 +47,31 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
   }, [])
 
   const aiReady = !!(settings?.api_keys?.openai || settings?.api_keys?.gemini)
+
+  // Native OS folder picker (opened by the local server, returns an absolute path)
+  const browseFolder = async () => {
+    setPicking(true)
+    pickAbort.current = new AbortController()
+    try {
+      const resp = await fetch("/api/system/pick-folder", {
+        method: "POST",
+        signal: pickAbort.current.signal,
+      })
+      if (!resp.ok) throw new Error((await resp.json()).detail ?? `HTTP ${resp.status}`)
+      const data = await resp.json()
+      if (data.path) setFolder(String(data.path).replace(/\\/g, "/"))
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") toast.error((err as Error).message)
+    } finally {
+      setPicking(false)
+      pickAbort.current = null
+    }
+  }
+
+  // Quick-fill chips: folders the user used before (derived from existing projects)
+  const recentFolders = [
+    ...new Set((projects ?? []).map((p) => p.project_folder).filter(Boolean)),
+  ]
 
   const refresh = () => {
     onRefresh()
@@ -124,13 +151,52 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="p-folder">Project folder (local path)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="p-folder">Project folder (local path)</Label>
+                  <div className="flex items-center gap-1.5">
+                    {picking && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7"
+                        onClick={() => pickAbort.current?.abort()}
+                      >
+                        Cancel picker
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7"
+                      disabled={picking}
+                      onClick={() => void browseFolder()}
+                    >
+                      {picking ? "Pick a folder in the dialog…" : "Browse…"}
+                    </Button>
+                  </div>
+                </div>
                 <Input
                   id="p-folder"
                   placeholder="C:/Users/you/projects/kostfinder"
                   value={folder}
                   onChange={(e) => setFolder(e.target.value)}
                 />
+                {recentFolders.length > 0 && !folder && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="timecode leading-6">recent:</span>
+                    {recentFolders.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setFolder(f)}
+                        title={f}
+                        className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:border-input hover:text-foreground"
+                      >
+                        {f.split("/").pop()}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="p-url">Web app URL (running)</Label>
