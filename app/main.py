@@ -28,6 +28,11 @@ app = FastAPI(title="Hackathon Demo Video Studio", docs_url="/api/docs")
 _jobs: dict[str, pipeline.RenderStatus] = {}
 _job_threads: dict[str, threading.Thread] = {}
 
+
+@app.get("/api/health")
+def health() -> dict:
+    return {"ok": True, "web_dist": (settings_mod.REPO_ROOT / "web" / "dist").exists()}
+
 # ---------------------------------------------------------------- settings
 
 class SettingsUpdate(BaseModel):
@@ -266,14 +271,11 @@ def render_status(pid: str) -> dict:
 
 # ---------------------------------------------------------------- static
 
+# NOTE: mounts swallow every path registered AFTER them, so all /api routes
+# (including health) must be defined above this section.
 settings_mod.DATA_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/api/data", StaticFiles(directory=settings_mod.DATA_DIR), name="data")
 
 WEB_DIST = settings_mod.REPO_ROOT / "web" / "dist"
 if WEB_DIST.exists():
     app.mount("/", StaticFiles(directory=WEB_DIST, html=True), name="web")
-
-
-@app.get("/api/health")
-def health() -> dict:
-    return {"ok": True, "web_dist": WEB_DIST.exists()}
