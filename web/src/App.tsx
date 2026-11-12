@@ -39,8 +39,8 @@ export default function App() {
   // Show the boot splash once per session, briefly, then fade it out.
   useEffect(() => {
     if (boot === "ready") return
-    const fadeTimer = setTimeout(() => setBoot("fading"), 1050)
-    const doneTimer = setTimeout(() => setBoot("ready"), 1500)
+    const fadeTimer = setTimeout(() => setBoot("fading"), 1600)
+    const doneTimer = setTimeout(() => setBoot("ready"), 2050)
     return () => {
       clearTimeout(fadeTimer)
       clearTimeout(doneTimer)

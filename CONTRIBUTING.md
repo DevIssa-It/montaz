@@ -15,6 +15,7 @@ Thanks for helping improve montaz. A few conventions keep the codebase consisten
 - Errors that users can act on raise `TTSError` (TTS layer) or `RuntimeError` with an Indonesian user-facing message in the render pipeline.
 
 ## Before opening a PR
+0. By opening a PR you agree to [CLA.md](CLA.md) (license-grant to the project).
 1. `pnpm build` in `web/` must pass (TypeScript strict).
 2. `.venv/Scripts/python.exe -m pytest tests/` (or `.venv/bin/python` on Unix) must be green.
 3. Run the appropriate setup script in a clean folder to sanity-check the install flow if you touched dependencies.
