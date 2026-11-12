@@ -9,6 +9,7 @@ import { api, visualLabel } from "@/lib/api"
 import type { Project, Scene } from "@/types"
 import { Inspector } from "@/pages/studio/Inspector"
 import { PreviewCanvas } from "@/pages/studio/PreviewCanvas"
+import { Timeline } from "@/pages/studio/Timeline"
 import { newSceneDraft } from "@/pages/studio/scene"
 
 interface Props {
@@ -22,7 +23,22 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [previewing, setPreviewing] = useState<string | null>(null)
+  const [durations, setDurations] = useState<Record<string, number>>({})
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Load real narration durations (for timeline widths) once per audio file.
+  useEffect(() => {
+    if (!project) return
+    scenes.forEach((s) => {
+      if (!s.audio || durations[s.id] !== undefined) return
+      const src = s.audio.startsWith("/") ? s.audio : `/api/data/${project.id}/audio/${s.audio}`
+      const probe = new Audio()
+      probe.preload = "metadata"
+      probe.src = src
+      probe.onloadedmetadata = () =>
+        setDurations((prev) => (prev[s.id] === undefined ? { ...prev, [s.id]: probe.duration } : prev))
+    })
+  }, [project, scenes, durations])
 
   useEffect(() => {
     if (project) {
@@ -53,6 +69,14 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
 
   const updateScene = (id: string, patch: Partial<Scene>) =>
     mutate((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+
+  const reorder = (from: number, insertBefore: number) =>
+    mutate((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(from < insertBefore ? insertBefore - 1 : insertBefore, 0, moved)
+      return next
+    })
 
   const saveAll = async () => {
     setSaving(true)
@@ -111,6 +135,7 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
         </Badge>
         <span className="rec-dot" title="Captured at render time" />
         <span className="timecode">auto-capture armed</span>
+        <span className="timecode">· pipeline-first, this strip is just for review</span>
         <div className="ml-auto flex items-center gap-2">
           {dirty && <span className="text-xs text-warning">unsaved changes</span>}
           <Button size="sm" onClick={() => void saveAll()} disabled={saving || !dirty}>
@@ -209,6 +234,18 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
             )}
           </ScrollArea>
         </div>
+      </div>
+
+      {/* Review timeline — reorder convenience, the pipeline does the rest */}
+      <div className="shrink-0 px-3 pb-3">
+        <Timeline
+          scenes={scenes}
+          durations={durations}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onReorder={reorder}
+          bgmEnabled={project.bgm.enabled}
+        />
       </div>
     </div>
   )

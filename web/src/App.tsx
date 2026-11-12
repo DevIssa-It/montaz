@@ -1,23 +1,45 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, type ReactElement } from "react"
 
 import { BrandMark } from "@/components/BrandMark"
+import { SettingsModal } from "@/components/SettingsModal"
 import { SplashScreen } from "@/components/SplashScreen"
 import { Toaster } from "@/components/ui/sonner"
 import { api } from "@/lib/api"
 import { ProjectsPage } from "@/pages/ProjectsPage"
 import { RenderPage } from "@/pages/RenderPage"
-import { SettingsPage } from "@/pages/SettingsPage"
 import { StudioPage } from "@/pages/studio/StudioPage"
 import type { Project } from "@/types"
 
-type View = "projects" | "studio" | "render" | "settings"
+type View = "projects" | "studio" | "render"
 type BootPhase = "splash" | "fading" | "ready"
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: "projects", label: "Projects" },
-  { id: "studio", label: "Studio" },
-  { id: "render", label: "Render" },
-  { id: "settings", label: "Settings" },
+// Activity bar: icon rail, VS Code-style. Icons echo the mark's geometry.
+const RAIL: { id: View; label: string; icon: ReactElement }[] = [
+  {
+    id: "projects",
+    label: "Projects",
+    icon: (
+      <g>
+        <rect x="3" y="4.5" width="18" height="15" rx="2" />
+        <path d="M8 4.5 V19.5 M16 4.5 V19.5" />
+      </g>
+    ),
+  },
+  {
+    id: "studio",
+    label: "Studio",
+    icon: (
+      <g>
+        <rect x="3" y="3" width="13" height="13" rx="2" />
+        <path d="M8.5 21 H19 A2 2 0 0 0 21 19 V8.5" />
+      </g>
+    ),
+  },
+  {
+    id: "render",
+    label: "Render",
+    icon: <path d="M13 2.5 L5.5 13.5 H11.5 L10 21.5 L18.5 9.5 H12.5 Z" />,
+  },
 ]
 
 const ACTIVE_KEY = "montaz.activeProjectId"
@@ -32,6 +54,7 @@ export default function App() {
     () => localStorage.getItem(ACTIVE_KEY)
   )
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [boot, setBoot] = useState<BootPhase>(() =>
     sessionStorage.getItem(BOOTED_KEY) ? "ready" : "splash"
   )
@@ -90,54 +113,119 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground">
       {boot !== "ready" && <SplashScreen fading={boot === "fading"} />}
-      <header className="flex h-13 items-center gap-4 border-b border-border px-4">
-        <div className="flex items-center gap-2">
-          <BrandMark className="h-5 w-5 text-foreground" />
-          <span className="text-sm font-semibold tracking-tight lowercase">montaz</span>
-          <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            local
-          </span>
-        </div>
-        <nav className="ml-6 flex items-center gap-1">
-          {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setView(v.id)}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
-                view === v.id
-                  ? "bg-accent font-medium text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
-        </nav>
-        {activeProject && (
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-            <span>active:</span>
-            <span className="font-medium text-foreground">{activeProject.name}</span>
-          </div>
-        )}
-      </header>
 
-      <main>
-        {view === "projects" && (
-          <ProjectsPage
-            projects={projects}
-            onRefresh={refreshProjects}
-            activeProjectId={activeProjectId}
-            onOpenStudio={openStudio}
-            onOpenRender={openRender}
-          />
-        )}
-        {view === "studio" && <StudioPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
-        {view === "render" && <RenderPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
-        {view === "settings" && <SettingsPage />}
-      </main>
+      {/* Activity bar */}
+      <nav className="flex w-13 shrink-0 flex-col items-center gap-1 border-r border-border py-3">
+        <button
+          type="button"
+          onClick={() => setView("projects")}
+          title="Projects"
+          aria-label="Projects"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
+            view === "projects"
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {view === "projects" && (
+            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
+          )}
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            {RAIL[0].icon}
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("studio")}
+          title="Studio"
+          aria-label="Studio"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
+            view === "studio"
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {view === "studio" && (
+            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
+          )}
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            {RAIL[1].icon}
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("render")}
+          title="Render"
+          aria-label="Render"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
+            view === "render"
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {view === "render" && (
+            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
+          )}
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            {RAIL[2].icon}
+          </svg>
+        </button>
+
+        <div className="mt-auto">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            title="Settings"
+            aria-label="Settings"
+            className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {/* sliders icon */}
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 7 H14 M18 7 H20" />
+              <circle cx="16" cy="7" r="2" />
+              <path d="M4 17 H6 M10 17 H20" />
+              <circle cx="8" cy="17" r="2" />
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      {/* Main column */}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <header className="flex h-13 shrink-0 items-center gap-3 border-b border-border px-4">
+          <div className="flex items-center gap-2">
+            <BrandMark className="h-5 w-5 text-foreground" />
+            <span className="text-sm font-semibold tracking-tight lowercase">montaz</span>
+            <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              local
+            </span>
+          </div>
+          {activeProject && (
+            <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <span>active:</span>
+              <span className="font-medium text-foreground">{activeProject.name}</span>
+            </div>
+          )}
+        </header>
+
+        <main className="min-h-0 flex-1">
+          {view === "projects" && (
+            <ProjectsPage
+              projects={projects}
+              onRefresh={refreshProjects}
+              activeProjectId={activeProjectId}
+              onOpenStudio={openStudio}
+              onOpenRender={openRender}
+            />
+          )}
+          {view === "studio" && <StudioPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
+          {view === "render" && <RenderPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
+        </main>
+      </div>
+
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>
