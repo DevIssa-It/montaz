@@ -34,3 +34,6 @@ App open source untuk membuat **video demo hackathon otomatis end-to-end** (form
 - Jalankan studio: `scripts/run.bat` (atau uvicorn manual). Dummy E2E: `python -m http.server 8077` di `../e2e-dummy-app`.
 - Server E2E masih berjalan di background sesi ini (port 8000 studio, 8077 dummy app).
 - Model: Flash cukup untuk seluruh build; tak perlu top-up (terbukti selesai tanpa kuota habis).
+
+## Lokasi home (2026-11-12)
+Repo dipindah ke `C:/Users/ahmad/Documents/Project/Vvideo-builder/montaz` (usulan user, sebelumnya workspace ZCode). .venv di-recreate, shortcut desktop di-regenerate, git+data utuh. Salinan lama di workspace ZCode tinggal dihapus setelah sesi ditutup (host mengunci workspace saat sesi hidup).
