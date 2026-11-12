@@ -145,10 +145,10 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-[280px_1fr_340px]">
-        {/* Scene list */}
+        {/* Script — the spoken words (text view); timeline below is the film view */}
         <div className="min-h-0 border-r border-border">
           <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">Scenes</span>
+            <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">Script</span>
             <Button
               size="sm"
               variant="outline"
@@ -179,17 +179,21 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
                 >
                   <div className="flex items-center gap-2">
                     <span className="timecode">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="truncate text-sm font-medium">
+                    <span className="truncate text-xs font-medium text-muted-foreground">
                       {scene.title || "Untitled scene"}
+                      {scene.audio && <span className="ml-1 text-primary">♪</span>}
                     </span>
-                    {scene.audio && <span className="ml-auto text-xs text-primary">♪</span>}
+                    <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
+                      {visualLabel(scene.visual.type)}
+                    </Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                  <p className={`mt-1 leading-relaxed ${
+                    scene.narration
+                      ? "text-[13px] text-foreground line-clamp-3"
+                      : "text-xs italic text-muted-foreground"
+                  }`}>
                     {scene.narration || "no narration yet"}
                   </p>
-                  <Badge variant="outline" className="mt-1.5 text-[10px]">
-                    {visualLabel(scene.visual.type)}
-                  </Badge>
                 </button>
               ))
             )}
