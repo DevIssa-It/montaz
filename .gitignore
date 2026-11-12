@@ -1,0 +1,19 @@
+# secrets & local data
+settings.local.json
+data/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# node (frontend build is committed for non-Node users; sources and caches are not)
+web/node_modules/
+web/dist/work/
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
