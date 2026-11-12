@@ -1,33 +1,35 @@
 # TASK.md — Hackathon Demo Video Studio
 
 ## 1. Active Objective
-App open source untuk membuat **video demo hackathon otomatis end-to-end** (format Devpost: capture layar + narasi TTS, tanpa wajah, tanpa editing manual). User menunjuk folder project + URL web app yang sedang jalan → app menulis naskah (rule-based, AI opsional), meng-capture demo via Playwright, menarasikan via TTS, merakit MP4 via FFmpeg.
-
-**Dijalankan pakai GLM-5.3-Flash (plan gratis) tanpa top-up — jangan ganti model tanpa diminta.**
+App open source untuk membuat **video demo hackathon otomatis end-to-end** (format Devpost: capture layar + narasi TTS, tanpa wajah, tanpa editing manual). User menunjuk folder project + URL web app yang sedang jalan → app menulis naskah (rule-based, AI opsional), meng-capture demo via Playwright, menarasikan via TTS, merakit MP4 via FFmpeg. **V1 SELESAI & TERVERIFIKASI E2E.**
 
 ## 2. Current Architecture & Configurations
-- **Stack**: FastAPI (Python 3.14, venv `.venv/`) + React+Vite+TS+Tailwind+shadcn/ui (frontend, build → `web/dist/` diserve FastAPI) + Playwright Chromium + FFmpeg (system, fallback `imageio-ffmpeg` binary — TIDAK ada ffprobe, durasi via parsing stderr `ffmpeg -i`).
-- **Package manager JS: pnpm WAJIB (npm DILARANG user — lihat memory `no-npm-use-pnpm`).**
-- **Desain**: DESIGN.md Archetype B — bg `#090A0F`, card `#12141A`, border `rgba(255,255,255,0.08)`, teks `#EDEDED`, accent emerald, radius 6–8px, DILARANG purple gradient / glassmorphism / rounded-2xl. shadcn via CLI (`pnpm dlx shadcn@latest ...`), komponen TIDAK dibuat manual.
-- **Struktur backend**: `app/settings.py` (settings.local.json, keys gitignored), `app/project_store.py` (data/<id>/project.json + assets/audio/output), `app/tts/` (base registry + edge/elevenlabs/openai/gemini engines), `app/scriptgen/` (extractor README+stack+routes regex, crawler BFS same-origin max 6 halaman, generator template en/id + polish OpenAI/Gemini opsional), `app/capture/` (browser.py sync_playwright → webm 1280x720; terminal.py jalankan command asli), `app/render/` (cards.py PIL 1920x1080; ffmpeg.py xfade 0.4s fallback hardcut; pipeline.py job background), `app/main.py` (routes: /api/settings, /api/tts/engines|voices, /api/projects CRUD, /scriptgen, /audio preview, /assets upload, /render + /render/status, mount /api/data + web/dist).
-- **Data project**: `data/<project_id>/project.json` — scenes[]: id, title, narration, visual {type: card|browser|terminal|image|video, ...aksi/asset}, audio (rel path). TTS per scene disynth dulu → durasi scene = durasi audio + pad 0.6s.
-- **Environment terverifikasi**: Python 3.14 venv OK; deps terpasang (requirements.txt); edge-tts synth OK (uji 17KB mp3); Chromium Playwright terinstall; ffmpeg 9.0.2 via imageio-ffmpeg; pnpm 10.27.0 + corepack; Node 22.
-- **Tanpa API key apa pun app jalan penuh** (Edge TTS + rule-based naskah). Key hanya upgrade (ElevenLabs/OpenAI/Gemini TTS, polish LLM).
+- **Stack**: FastAPI (Python 3.14, venv `.venv/`) + React 19 + Vite 8 + TS 7 + Tailwind v4 + shadcn Base UI (style `base-mira`, build → `web/dist/` DI-COMMIT, diserve FastAPI) + Playwright Chromium + FFmpeg (system, fallback `imageio-ffmpeg` — tidak ada ffprobe, durasi via parsing stderr).
+- **Package manager JS: pnpm WAJIB (npm DILARANG user — memory `no-npm-use-pnpm`).**
+- **Desain**: Archetype B DESIGN.md — `#090A0F`/`#12141A`/border `rgba(255,255,255,0.08)`/teks `#EDEDED`/accent emerald/radius 8px. shadcn via CLI (`pnpm dlx shadcn@latest ...`).
+- **Backend**: `app/main.py` (routes; SEMUA route /api WAJIB di atas mount static), `settings.py`, `project_store.py` (+ `resolve_asset_path` anti-traversal), `tts/` (registry + edge/elevenlabs/openai/gemini), `scriptgen/` (extractor/crawler/generator), `capture/` (browser sync_playwright 1280×720, terminal), `render/` (cards PIL, ffmpeg xfade 0.4s, pipeline job thread).
+- **Data**: `data/<id>/project.json` — scenes[] visual type: card|browser|terminal|image|video.
+- **Keamanan**: bind 127.0.0.1 saja, TANPA CORS (same-origin), API key tak pernah dikirim ke UI (boolean), path traversal diblok, command terminal hanya dari project.json user sendiri.
+- **Frontend**: `web/src/` — App.tsx (SSOT: projects + activeProject), pages/{Projects,Studio,Render,Settings}Page.tsx, lib/api.ts, types.ts. TS strict (`noUnusedLocals`, `verbatimModuleSyntax`, TS7 tanpa baseUrl).
+- **Git**: repo ter-init, 2 commit (`bedbf96` initial, `9cc3060` fix E2E). Identitas: Qiforiss67.
 
 ## 3. Completed Work & Verified Items
-- [x] Bootstrap env lengkap (semua di atas terverifikasi via terminal).
-- [x] Backend semua modul ditulis: settings, project_store, 4 TTS engines, scriptgen (extractor/crawler/generator), capture (browser/terminal), render (cards/ffmpeg/pipeline), main.py dengan semua routes.
-- [x] main.py dibersihkan (asyncio unused dihapus, param force dihapus).
+- [x] Bootstrap env lengkap (venv, deps, Chromium, edge-tts online, ffmpeg 9.0.2 bundled).
+- [x] Backend penuh + keamanan (audit SoC/SSOT/security diterapkan).
+- [x] Frontend 4 layar, build hijau (TS strict), dist ter-commit.
+- [x] **pytest 17/17 hijau** + **harness `test-project` hijau** (jalankan via venv python: `demo-video-studio/.venv/Scripts/python.exe C:/Users/ahmad/agent_eval_harness.py test-project demo-video-studio`).
+- [x] **E2E penuh lulus**: dummy app (e2e-dummy-app/, port 8077) → project `kostfinder-e2e-1794444859` → scriptgen 7 scene (2 browser capture hasil crawl) → render → **final.mp4 48.7s, 1920×1080 h264+aac, 2.6 MB**.
+- [x] UI terverifikasi visual via browser (Settings/Projects/Studio/Render) — Archetype B lolos checklist: tanpa purple/balon/glassmorphism, border rapi, mono timecode, 4-state (empty Studio, skeleton, toast error, done).
+- [x] Bug hasil E2E sudah diperbaiki & di-commit (health route order, pad sintaks, parser tagline).
 
-## 4. Immediate Next Actions
-1. Buat `__init__.py` untuk app/, app/tts/, app/scriptgen/, app/capture/, app/render/, tests/.
-2. Scaffold frontend: `pnpm create vite web --template react-ts` → tailwindcss → `pnpm dlx shadcn@latest init` → `add button card select dialog tabs progress slider input textarea label badge separator tooltip sonner skeleton alert scroll-area switch` → tema Archetype B di index.css (CSS vars shadcn di-override).
-3. Implementasi 4 layar (src/App.tsx + src/pages/* + src/lib/api.ts): Settings (engine→voices kaskade, kolom key + test-connection), Project (folder+URL+Generate), Studio 3-panel ala Descript (scene list | preview 16:9 | inspector + preview audio <audio src=/api/data/...>), Render (POST /render + poll status + <video> final).
-4. Tests pytest: extractor (fixture mini), generator, cards render, ffmpeg smoke 2 kartu ±2s assert durasi; jalankan `pytest` + `python C:/Users/ahmad/agent_eval_harness.py test-project demo-video-studio` (path Windows forward slash!).
-5. Packaging: scripts/setup.bat|.sh, run.bat|.sh, README EN, LICENSE MIT, CONTRIBUTING, .gitignore (settings.local.json, data/, .venv, node_modules), git init + commit.
-6. E2E: dummy web app 2 route (python http.server atau serve via uvicorn kecil) → buat project via API → scriptgen → render → cek output/final.mp4 (durasi ffprobe) → cek UI via browser-use skill (screenshot, checklist DESIGN.md §5).
+## 4. Immediate Next Actions (kandidat lanjutan)
+1. Push ke GitHub (`git remote add origin ...` + push) bila user mau publikasi.
+2. Tombol "Polish dengan AI" sudah ada di backend (`polish: true`) — belum ada tombol UI terpisah (scriptgen UI selalu polish=false); tambahkan toggle di ProjectsPage bila diinginkan.
+3. BGM: backend siap (`bgm.enabled/path/volume` + `mix_bgm`), UI belum menyediakan upload file BGM — path diisi manual via project.json.
+4. v2 (di luar scope): mobile capture (ADB), auto-launch project dari folder, .exe PyInstaller, BGM library.
 
-## Catatan eksekusi penting (Windows/git-bash)
-- Path CLI native Windows: `C:/...` forward slash, BUKAN `/c/...`.
-- venv python: `.venv/Scripts/python.exe`.
-- Plan user: Flash cukup; kalau bug sulit 2-3 iterasi gagal → delegasikan potongan itu ke model penuh sebagai subagent transien (konvensi §4 AGENTS.md).
+## Catatan eksekusi (Windows/git-bash)
+- Path CLI native: `C:/...` forward slash. venv: `.venv/Scripts/python.exe`.
+- Jalankan studio: `scripts/run.bat` (atau uvicorn manual). Dummy E2E: `python -m http.server 8077` di `../e2e-dummy-app`.
+- Server E2E masih berjalan di background sesi ini (port 8000 studio, 8077 dummy app).
+- Model: Flash cukup untuk seluruh build; tak perlu top-up (terbukti selesai tanpa kuota habis).
