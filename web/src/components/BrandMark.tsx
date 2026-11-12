@@ -9,11 +9,11 @@ import { useId } from "react"
 
 interface Props {
   className?: string
-  /** Intersection color; defaults to the brand emerald. */
+  /** Intersection color; defaults to the brand gold. */
   storyColor?: string
 }
 
-export function BrandMark({ className, storyColor = "#10B981" }: Props) {
+export function BrandMark({ className, storyColor = "#FBBF24" }: Props) {
   const clipId = useId()
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true" role="img">

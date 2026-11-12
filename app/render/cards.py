@@ -2,7 +2,7 @@
 
 Palette follows DESIGN.md Archetype B (Developer Tools):
 pitch canvas #090A0F, card #12141A, text #EDEDED, muted #8B8F9A,
-accent emerald #10B981, hairline border #1C1D24.
+brand gold #FBBF24 (projector beam), hairline border #1C1D24.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ BG = (9, 10, 15)
 CARD = (18, 20, 26)
 TEXT = (237, 237, 237)
 MUTED = (139, 143, 154)
-ACCENT = (16, 185, 129)
+ACCENT = (251, 191, 36)
 BORDER = (28, 29, 36)
 TERM_BG = (10, 13, 20)
 

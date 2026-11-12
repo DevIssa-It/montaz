@@ -50,7 +50,7 @@ export function SplashScreen({ fading }: { fading: boolean }) {
           width="10"
           height="10"
           rx="2"
-          fill="#10B981"
+          fill="#FBBF24"
           clip-path="url(#splash-cutA)"
         />
       </svg>
