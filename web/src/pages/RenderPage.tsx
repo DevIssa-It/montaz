@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
@@ -72,6 +73,32 @@ export function RenderPage({ project, onProjectUpdated }: Props) {
     }
   }
 
+  const uploadBgm = async (file: File) => {
+    try {
+      const asset = await api.uploadAsset(project.id, file)
+      const updated = await api.updateProject(project.id, {
+        bgm: { enabled: true, path: asset.path, volume: bgmVolume },
+      })
+      onProjectUpdated(updated)
+      setBgmEnabled(true)
+      toast.success(`BGM ready: ${file.name}`)
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
+  const clearBgm = async () => {
+    try {
+      const updated = await api.updateProject(project.id, {
+        bgm: { enabled: false, path: "", volume: bgmVolume },
+      })
+      onProjectUpdated(updated)
+      setBgmEnabled(false)
+    } catch (err) {
+      toast.error((err as Error).message)
+    }
+  }
+
   const scenesWithAudio = project.scenes.filter((s) => s.audio).length
   const running = status.state === "running"
 
@@ -107,7 +134,7 @@ export function RenderPage({ project, onProjectUpdated }: Props) {
           <div className="flex items-center gap-3">
             <Switch id="bgm" checked={bgmEnabled} onCheckedChange={(v) => setBgmEnabled(v)} />
             <label htmlFor="bgm" className="text-sm">
-              Background music (optional, needs <code className="font-mono text-xs">bgm.path</code> set)
+              Background music
             </label>
             {bgmEnabled && (
               <div className="ml-auto flex items-center gap-2">
@@ -123,6 +150,34 @@ export function RenderPage({ project, onProjectUpdated }: Props) {
               </div>
             )}
           </div>
+          {bgmEnabled && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept="audio/*"
+                className="h-8 max-w-64 text-xs"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) void uploadBgm(file)
+                }}
+              />
+              {project.bgm.path ? (
+                <>
+                  <span className="timecode truncate">{project.bgm.path.split("/").pop()}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-destructive"
+                    onClick={() => void clearBgm()}
+                  >
+                    ×
+                  </Button>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground">pick an audio file to mix at ~15% volume</span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <Button onClick={() => void start()} disabled={running || starting || project.scenes.length === 0}>

@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
 import type { Project, Settings } from "@/types"
 
@@ -35,12 +36,15 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
   const [folder, setFolder] = useState("")
   const [appUrl, setAppUrl] = useState("")
   const [creating, setCreating] = useState(false)
+  const [polish, setPolish] = useState(false)
   const [genBusy, setGenBusy] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
 
   useEffect(() => {
     void api.getSettings().then(setSettings).catch(() => {})
   }, [])
+
+  const aiReady = !!(settings?.api_keys?.openai || settings?.api_keys?.gemini)
 
   const refresh = () => {
     onRefresh()
@@ -67,7 +71,7 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
     setGenBusy(project.id)
     try {
       const language = settings?.language ?? "en-US"
-      const updated = await api.scriptgen(project.id, language, false)
+      const updated = await api.scriptgen(project.id, language, polish)
       toast.success(`Script generated — ${updated.scenes.length} scenes.`)
       refresh()
       onOpenStudio(project.id)
@@ -146,6 +150,28 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
           </div>
         </CardContent>
       </Card>
+
+      {/* AI polish toggle — one global switch for all generate actions */}
+      {projects !== null && projects.length > 0 && (
+        <div className="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3">
+          <Switch
+            id="polish"
+            checked={polish}
+            disabled={!aiReady}
+            onCheckedChange={(v) => setPolish(v)}
+          />
+          <label htmlFor="polish" className="text-sm">
+            Polish narration with AI
+          </label>
+          {aiReady ? (
+            <span className="timecode ml-auto">openai / gemini</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              needs an OpenAI or Gemini key — Settings
+            </span>
+          )}
+        </div>
+      )}
 
       {/* List */}
       <div className="space-y-2">
