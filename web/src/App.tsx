@@ -20,8 +20,8 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "settings", label: "Settings" },
 ]
 
-const ACTIVE_KEY = "montage.activeProjectId"
-const BOOTED_KEY = "montage.booted"
+const ACTIVE_KEY = "foley.activeProjectId"
+const BOOTED_KEY = "foley.booted"
 
 export default function App() {
   const [view, setView] = useState<View>("projects")
@@ -95,7 +95,7 @@ export default function App() {
       <header className="flex h-13 items-center gap-4 border-b border-border px-4">
         <div className="flex items-center gap-2">
           <BrandMark className="h-5 w-5 text-foreground" />
-          <span className="text-sm font-semibold tracking-tight">Montage</span>
+          <span className="text-sm font-semibold tracking-tight">Foley</span>
           <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             local
           </span>

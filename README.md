@@ -1,8 +1,8 @@
-# <img src="web/public/favicon.svg" align="top" width="28" alt=""> Montage
+# <img src="web/public/favicon.svg" align="top" width="28" alt=""> Foley
 
-**Many cuts, one story.** Create a hackathon demo video (Devpost style: screen capture + voice-over, no face, no manual editing) **automatically** — from your own project folder and running web app.
+**Sound on.** Create a hackathon demo video (Devpost style: screen capture + voice-over, no face, no manual editing) **automatically** — from your own project folder and running web app.
 
-You point Montage at your project; it writes the narration script, captures your app with a headless browser, synthesizes a natural voice-over, and assembles a final MP4. You only review and tweak.
+Foley is the film-craft of giving silent footage its sound — and that is exactly what this tool does: you point it at your project; it writes the narration script, captures your app with a headless browser, synthesizes a natural voice-over, and assembles a final MP4. You only review and tweak.
 
 ## How it works
 

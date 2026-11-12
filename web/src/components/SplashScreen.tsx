@@ -1,7 +1,7 @@
 /**
  * Boot splash — shown once per browser session, max ~1.5s.
- * The mark's two cut layers fade in staggered (montage), the playhead
- * pops like a REC indicator, then the whole overlay fades out.
+ * The mark's two cut layers fade in staggered (the silent cuts), the
+ * playhead pops like a REC indicator, then the wordmark lands — sound on.
  * Decorative only: aria-hidden, no focusable content.
  */
 export function SplashScreen({ fading }: { fading: boolean }) {
@@ -30,8 +30,8 @@ export function SplashScreen({ fading }: { fading: boolean }) {
         <circle className="splash-dot" cx="12" cy="12" r="2.7" fill="#10B981" />
       </svg>
       <div className="splash-word text-center">
-        <p className="text-2xl font-semibold tracking-tight text-foreground">Montage</p>
-        <p className="mt-1 text-xs tracking-wide text-muted-foreground">many cuts, one story</p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">Foley</p>
+        <p className="mt-1 text-xs tracking-wide text-muted-foreground">sound on.</p>
       </div>
     </div>
   )

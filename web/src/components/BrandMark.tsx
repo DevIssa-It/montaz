@@ -5,7 +5,7 @@ interface Props {
 }
 
 /**
- * Montage mark: two intercut frame layers + a record dot.
+ * Foley mark: two intercut frame layers + a record dot.
  * Layer A (currentColor) is the active cut, layer B (muted) is the one
  * behind it, the dot is the playhead. Pure geometry — no gradients.
  */
