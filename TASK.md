@@ -1,7 +1,8 @@
-# TASK.md — Hackathon Demo Video Studio
+# TASK.md — Montage (dulu: Demo Video Studio)
 
 ## 1. Active Objective
 App open source untuk membuat **video demo hackathon otomatis end-to-end** (format Devpost: capture layar + narasi TTS, tanpa wajah, tanpa editing manual). User menunjuk folder project + URL web app yang sedang jalan → app menulis naskah (rule-based, AI opsional), meng-capture demo via Playwright, menarasikan via TTS, merakit MP4 via FFmpeg. **V1 SELESAI & TERVERIFIKASI E2E.**
+**Nama: Montage** (pilihan user, visi luas: auto-demo → editing → aset). Logo: BrandMark (dua layer frame intercut + playhead emerald) di web/src/components/BrandMark.tsx + web/public/favicon.svg; splash sekali per sesi (SplashScreen.tsx, sessionStorage `montage.booted`). Tanpa watermark di video user. Catatan: validasi bentrokan nama online masih tertunda (kuota) — cek GitHub/search sebelum publis.
 
 ## 2. Current Architecture & Configurations
 - **Stack**: FastAPI (Python 3.14, venv `.venv/`) + React 19 + Vite 8 + TS 7 + Tailwind v4 + shadcn Base UI (style `base-mira`, build → `web/dist/` DI-COMMIT, diserve FastAPI) + Playwright Chromium + FFmpeg (system, fallback `imageio-ffmpeg` — tidak ada ffprobe, durasi via parsing stderr).

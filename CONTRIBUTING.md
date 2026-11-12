@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Demo Video Studio. A few conventions keep the codebase consistent:
+Thanks for helping improve Montage. A few conventions keep the codebase consistent:
 
 ## Package management
 - **pnpm only** for anything Node-related (`pnpm install`, `pnpm dlx shadcn@latest add ...`, `pnpm build`). Do not use npm/npx — the project has standardized on pnpm for disk efficiency.

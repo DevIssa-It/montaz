@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup for Demo Video Studio (macOS/Linux).
+# One-time setup for Montage (macOS/Linux).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

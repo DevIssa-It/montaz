@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 
+import { BrandMark } from "@/components/BrandMark"
+import { SplashScreen } from "@/components/SplashScreen"
 import { Toaster } from "@/components/ui/sonner"
 import { api } from "@/lib/api"
 import { ProjectsPage } from "@/pages/ProjectsPage"
@@ -9,6 +11,7 @@ import { StudioPage } from "@/pages/studio/StudioPage"
 import type { Project } from "@/types"
 
 type View = "projects" | "studio" | "render" | "settings"
+type BootPhase = "splash" | "fading" | "ready"
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "projects", label: "Projects" },
@@ -17,7 +20,8 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "settings", label: "Settings" },
 ]
 
-const ACTIVE_KEY = "dvs.activeProjectId"
+const ACTIVE_KEY = "montage.activeProjectId"
+const BOOTED_KEY = "montage.booted"
 
 export default function App() {
   const [view, setView] = useState<View>("projects")
@@ -28,6 +32,24 @@ export default function App() {
     () => localStorage.getItem(ACTIVE_KEY)
   )
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+  const [boot, setBoot] = useState<BootPhase>(() =>
+    sessionStorage.getItem(BOOTED_KEY) ? "ready" : "splash"
+  )
+
+  // Show the boot splash once per session, briefly, then fade it out.
+  useEffect(() => {
+    if (boot === "ready") return
+    const fadeTimer = setTimeout(() => setBoot("fading"), 1050)
+    const doneTimer = setTimeout(() => setBoot("ready"), 1500)
+    return () => {
+      clearTimeout(fadeTimer)
+      clearTimeout(doneTimer)
+    }
+  }, [boot])
+
+  useEffect(() => {
+    if (boot !== "ready") sessionStorage.setItem(BOOTED_KEY, "1")
+  }, [boot])
 
   const refreshProjects = useCallback(() => {
     void api
@@ -69,10 +91,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {boot !== "ready" && <SplashScreen fading={boot === "fading"} />}
       <header className="flex h-13 items-center gap-4 border-b border-border px-4">
         <div className="flex items-center gap-2">
-          <div className="h-5 w-5 rounded-sm bg-primary" />
-          <span className="text-sm font-semibold tracking-tight">Demo Video Studio</span>
+          <BrandMark className="h-5 w-5 text-foreground" />
+          <span className="text-sm font-semibold tracking-tight">Montage</span>
           <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             local
           </span>

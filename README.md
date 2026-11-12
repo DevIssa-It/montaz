@@ -1,8 +1,8 @@
-# Demo Video Studio
+# <img src="web/public/favicon.svg" align="top" width="28" alt=""> Montage
 
-Create a hackathon demo video (Devpost style: screen capture + voice-over, no face, no manual editing) **automatically** — from your own project folder and running web app.
+**Many cuts, one story.** Create a hackathon demo video (Devpost style: screen capture + voice-over, no face, no manual editing) **automatically** — from your own project folder and running web app.
 
-You point the studio at your project; it writes the narration script, captures your app with a headless browser, synthesizes a natural voice-over, and assembles a final MP4. You only review and tweak.
+You point Montage at your project; it writes the narration script, captures your app with a headless browser, synthesizes a natural voice-over, and assembles a final MP4. You only review and tweak.
 
 ## How it works
 
