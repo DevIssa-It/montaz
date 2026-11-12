@@ -5,7 +5,7 @@ import { api } from "@/lib/api"
 import { ProjectsPage } from "@/pages/ProjectsPage"
 import { RenderPage } from "@/pages/RenderPage"
 import { SettingsPage } from "@/pages/SettingsPage"
-import { StudioPage } from "@/pages/StudioPage"
+import { StudioPage } from "@/pages/studio/StudioPage"
 import type { Project } from "@/types"
 
 type View = "projects" | "studio" | "render" | "settings"
