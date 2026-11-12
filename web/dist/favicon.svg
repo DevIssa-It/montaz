@@ -1,12 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
   <rect width="24" height="24" rx="5" fill="#090A0F"/>
-  <g fill="none" stroke="#EDEDED" stroke-width="1.8" stroke-linecap="round" opacity="0.45">
-    <path d="M16.5 2.9 H18.8 Q21.1 2.9 21.1 5.2 V7.5"/>
-    <path d="M7.5 21.1 H5.2 Q2.9 21.1 2.9 18.8 V16.5"/>
-  </g>
-  <g fill="none" stroke="#EDEDED" stroke-width="1.8" stroke-linecap="round">
-    <path d="M2.9 7.5 V5.2 Q2.9 2.9 5.2 2.9 H7.5"/>
-    <path d="M16.5 21.1 H18.8 Q21.1 21.1 21.1 18.8 V16.5"/>
-  </g>
-  <rect x="7.5" y="8.5" width="9" height="7" rx="1.4" fill="#10B981"/>
+  <defs>
+    <clipPath id="cutA"><rect x="5" y="5" width="10" height="10" rx="2"/></clipPath>
+  </defs>
+  <rect x="9" y="9" width="10" height="10" rx="2" fill="none" stroke="#EDEDED" stroke-width="1.8" opacity="0.45"/>
+  <rect x="5" y="5" width="10" height="10" rx="2" fill="none" stroke="#EDEDED" stroke-width="1.8"/>
+  <rect x="9" y="9" width="10" height="10" rx="2" fill="#10B981" clip-path="url(#cutA)"/>
 </svg>

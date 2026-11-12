@@ -1,31 +1,41 @@
 /**
- * Montaz mark — the assembled cut.
- * Two intercut bracket layers (the montage) frame a single clip: many
- * cuts, assembled into one story. The center clip carries the brand
- * accent. Always set the wordmark lowercase — the spelling is the brand.
+ * Montaz mark — many cuts, one story.
+ * Two intercut frames; the emerald shape is their intersection: the
+ * story exists where the cuts overlap. Layer B (dimmed) sits behind
+ * layer A (full), their common region carries the accent.
  * Pure geometry — no gradients, no glow.
  */
+import { useId } from "react"
+
 interface Props {
   className?: string
-  /** Center clip color; defaults to the brand emerald. */
-  clipColor?: string
+  /** Intersection color; defaults to the brand emerald. */
+  storyColor?: string
 }
 
-export function BrandMark({ className, clipColor = "#10B981" }: Props) {
+export function BrandMark({ className, storyColor = "#10B981" }: Props) {
+  const clipId = useId()
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true" role="img">
-      {/* layer B — the cut behind */}
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.45">
-        <path d="M16.5 2.9 H18.8 Q21.1 2.9 21.1 5.2 V7.5" />
-        <path d="M7.5 21.1 H5.2 Q2.9 21.1 2.9 18.8 V16.5" />
-      </g>
-      {/* layer A — the active cut */}
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-        <path d="M2.9 7.5 V5.2 Q2.9 2.9 5.2 2.9 H7.5" />
-        <path d="M16.5 21.1 H18.8 Q21.1 21.1 21.1 18.8 V16.5" />
-      </g>
-      {/* the assembled clip */}
-      <rect x="7.5" y="8.5" width="9" height="7" rx="1.4" fill={clipColor} />
+      <defs>
+        <clipPath id={clipId}>
+          <rect x="5" y="5" width="10" height="10" rx="2" />
+        </clipPath>
+      </defs>
+      {/* cut B — behind */}
+      <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" opacity="0.45" />
+      {/* cut A — on top */}
+      <rect x="5" y="5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      {/* the story: where the two cuts meet */}
+      <rect
+        x="9"
+        y="9"
+        width="10"
+        height="10"
+        rx="2"
+        fill={storyColor}
+        clipPath={`url(#${clipId})`}
+      />
     </svg>
   )
 }

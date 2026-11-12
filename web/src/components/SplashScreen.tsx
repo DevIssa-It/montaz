@@ -1,9 +1,9 @@
 /**
  * Boot splash — shown once per browser session, ~2s, then fades out.
- * Sequence: the two cut layers intercut (stagger) -> the clip assembles
- * with a pop -> the wordmark lands letter by letter, like frames on a
- * strip -> the tagline types in with a blinking cursor -> the slate
- * line "take 01 · picture locked" (real post-production jargon) closes.
+ * Sequence: cut B slides in, cut A intercuts over it, then the story
+ * (the intersection of both cuts) assembles with a pop — many cuts,
+ * one story — wordmark letter by letter, typewriter tagline with a
+ * blinking cursor, closing slate "take 01 · picture locked".
  * Decorative only: aria-hidden, no focusable content.
  */
 const WORD = "montaz".split("")
@@ -17,21 +17,42 @@ export function SplashScreen({ fading }: { fading: boolean }) {
       }`}
     >
       <svg viewBox="0 0 24 24" className="h-16 w-16" fill="none">
-        <g
+        <defs>
+          <clipPath id="splash-cutA">
+            <rect x="5" y="5" width="10" height="10" rx="2" />
+          </clipPath>
+        </defs>
+        <rect
           className="splash-layer-b"
+          x="9"
+          y="9"
+          width="10"
+          height="10"
+          rx="2"
           stroke="#EDEDED"
           strokeWidth="1.8"
-          strokeLinecap="round"
           opacity="0.45"
-        >
-          <path d="M16.5 2.9 H18.8 Q21.1 2.9 21.1 5.2 V7.5" />
-          <path d="M7.5 21.1 H5.2 Q2.9 21.1 2.9 18.8 V16.5" />
-        </g>
-        <g className="splash-layer-a" stroke="#EDEDED" strokeWidth="1.8" strokeLinecap="round">
-          <path d="M2.9 7.5 V5.2 Q2.9 2.9 5.2 2.9 H7.5" />
-          <path d="M16.5 21.1 H18.8 Q21.1 21.1 21.1 18.8 V16.5" />
-        </g>
-        <rect className="splash-clip" x="7.5" y="8.5" width="9" height="7" rx="1.4" fill="#10B981" />
+        />
+        <rect
+          className="splash-layer-a"
+          x="5"
+          y="5"
+          width="10"
+          height="10"
+          rx="2"
+          stroke="#EDEDED"
+          strokeWidth="1.8"
+        />
+        <rect
+          className="splash-clip"
+          x="9"
+          y="9"
+          width="10"
+          height="10"
+          rx="2"
+          fill="#10B981"
+          clip-path="url(#splash-cutA)"
+        />
       </svg>
 
       <div className="text-center">
