@@ -1,5 +1,5 @@
 @echo off
-REM One-time setup for Foley (Windows).
+REM One-time setup for montaz (Windows).
 REM Requires Python 3.11+ on PATH. FFmpeg is optional (a bundled binary is used as fallback).
 setlocal
 cd /d "%~dp0.."

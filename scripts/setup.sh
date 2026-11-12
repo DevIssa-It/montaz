@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup for Foley (macOS/Linux).
+# One-time setup for montaz (macOS/Linux).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

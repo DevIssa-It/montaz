@@ -22,7 +22,7 @@ from .scriptgen import crawler, generator
 from .tts import base as tts_base
 from .tts import edge_engine, elevenlabs_engine, openai_engine, gemini_engine  # noqa: F401 - register engines
 
-app = FastAPI(title="Foley", docs_url="/api/docs")
+app = FastAPI(title="montaz", docs_url="/api/docs")
 
 # One render job per project.
 _jobs: dict[str, pipeline.RenderStatus] = {}
