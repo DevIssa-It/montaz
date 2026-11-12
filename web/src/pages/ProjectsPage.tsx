@@ -177,7 +177,7 @@ export function ProjectsPage({ projects, onRefresh, activeProjectId, onOpenStudi
                 </div>
                 <Input
                   id="p-folder"
-                  placeholder="C:/Users/you/projects/kostfinder"
+                  placeholder="paste a path here, or click Browse…"
                   value={folder}
                   onChange={(e) => setFolder(e.target.value)}
                 />
