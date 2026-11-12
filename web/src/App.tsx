@@ -44,6 +44,7 @@ const RAIL: { id: View; label: string; icon: ReactElement }[] = [
 
 const ACTIVE_KEY = "montaz.activeProjectId"
 const BOOTED_KEY = "montaz.booted"
+const RAIL_OPEN_KEY = "montaz.railOpen"
 
 export default function App() {
   const [view, setView] = useState<View>("projects")
@@ -55,6 +56,17 @@ export default function App() {
   )
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [railOpen, setRailOpen] = useState<boolean>(
+    () => localStorage.getItem(RAIL_OPEN_KEY) === "1"
+  )
+
+  const toggleRail = useCallback(() => {
+    setRailOpen((prev) => {
+      const next = !prev
+      localStorage.setItem(RAIL_OPEN_KEY, next ? "1" : "0")
+      return next
+    })
+  }, [])
   const [boot, setBoot] = useState<BootPhase>(() =>
     sessionStorage.getItem(BOOTED_KEY) ? "ready" : "splash"
   )
@@ -116,77 +128,69 @@ export default function App() {
     <div className="flex min-h-screen bg-background text-foreground">
       {boot !== "ready" && <SplashScreen fading={boot === "fading"} />}
 
-      {/* Activity bar */}
-      <nav className="flex w-13 shrink-0 flex-col items-center gap-1 border-r border-border py-3">
-        <button
-          type="button"
-          onClick={() => setView("projects")}
-          title="Projects"
-          aria-label="Projects"
-          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
-            view === "projects"
-              ? "bg-accent text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {view === "projects" && (
-            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
-          )}
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            {RAIL[0].icon}
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("studio")}
-          title="Studio"
-          aria-label="Studio"
-          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
-            view === "studio"
-              ? "bg-accent text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {view === "studio" && (
-            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
-          )}
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            {RAIL[1].icon}
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("render")}
-          title="Render"
-          aria-label="Render"
-          className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
-            view === "render"
-              ? "bg-accent text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {view === "render" && (
-            <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
-          )}
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            {RAIL[2].icon}
-          </svg>
-        </button>
+      {/* Activity bar — collapsible: icons only (collapsed) or icon + label (expanded) */}
+      <nav
+        className={`flex shrink-0 flex-col gap-1 border-r border-border py-3 transition-[width] duration-200 ${
+          railOpen ? "w-52" : "w-13"
+        }`}
+      >
+        {RAIL.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setView(item.id)}
+            title={item.label}
+            aria-current={view === item.id ? "page" : undefined}
+            className={`relative flex h-10 shrink-0 items-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
+              railOpen ? "mx-2 gap-3 px-3" : "mx-2 justify-center"
+            } ${
+              view === item.id
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {view === item.id && (
+              <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
+            )}
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin={item.id === "render" ? "round" : undefined}>
+              {item.icon}
+            </svg>
+            {railOpen && <span className="truncate text-sm">{item.label}</span>}
+          </button>
+        ))}
 
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-1">
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
             title="Settings"
             aria-label="Settings"
-            className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            className={`flex h-10 shrink-0 items-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring ${
+              railOpen ? "mx-2 gap-3 px-3" : "mx-2 justify-center"
+            }`}
           >
-            {/* sliders icon */}
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M4 7 H14 M18 7 H20" />
               <circle cx="16" cy="7" r="2" />
               <path d="M4 17 H6 M10 17 H20" />
               <circle cx="8" cy="17" r="2" />
+            </svg>
+            {railOpen && <span className="truncate text-sm">Settings</span>}
+          </button>
+          <button
+            type="button"
+            onClick={toggleRail}
+            title={railOpen ? "Collapse sidebar" : "Expand sidebar"}
+            aria-expanded={railOpen}
+            aria-label={railOpen ? "Collapse sidebar" : "Expand sidebar"}
+            className="flex h-10 shrink-0 items-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring mx-2 justify-center"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              {railOpen ? (
+                <path d="M11 17 L6 12 L11 7 M18 17 L13 12 L18 7" />
+              ) : (
+                <path d="M13 7 L18 12 L13 17 M6 7 L11 12 L6 17" />
+              )}
             </svg>
           </button>
         </div>
