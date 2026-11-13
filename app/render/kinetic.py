@@ -145,6 +145,7 @@ def render_split_frames(
             if bp <= 0:
                 continue
             done = bp >= 1
+            lines_b = _wrap(d, bullet, bf, max_w - 76)[:2]
             d.ellipse([tx, by, tx + 52, by + 52], fill=_blend(GOLD, bp))
             if done:
                 d.line([(tx + 14, by + 27), (tx + 22, by + 36), (tx + 38, by + 16)],
@@ -152,9 +153,9 @@ def render_split_frames(
             else:
                 d.text((tx + 19, by + 8), str(bi + 1), font=font("mono", 26),
                        fill=_blend((9, 10, 15), bp))
-            for li, line in enumerate(_wrap(d, bullet, bf, max_w - 76)[:2]):
-                d.text((tx + 68, by + li * 2 - 2), line, font=bf, fill=_blend(TEXT_LIGHT, bp))
-            by += 74
+            for li, line in enumerate(lines_b):
+                d.text((tx + 68, by + li * 50), line, font=bf, fill=_blend(TEXT_LIGHT, bp))
+            by += len(lines_b) * 50 + 22
 
     def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float, phase: float) -> None:
         x0, y0, x1, y1 = PANEL_BOX
