@@ -146,9 +146,13 @@ def render_split_frames(
     fps: int = 10,
     counter: tuple[int, int] | None = None,
 ) -> Path:
-    """Split-layout card: narration beats land on the LEFT while the app's
-    REAL screenshot slides in on the RIGHT (gold frame) — the visual asset
-    the deck was missing."""
+    """Kinetic split card, Teams-intro style:
+    - heading lands word by word, gold underline sweeps under it
+    - numbered bullets slide in staggered
+    - app screenshot rides a Ken Burns zoom inside a gold-framed panel
+      with a LIVE badge
+    - a thin film-progress line runs along the bottom
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     base_img, _ = _deco_base(counter)
     total_frames = max(int(round(total_seconds * fps)), fps)
@@ -160,53 +164,74 @@ def render_split_frames(
         except Exception:
             shot = None
 
-    # Layout: text column left (160..860), app panel right (940..1760)
-    panel = (940, 240, 1760, 900)  # 820x660 → shot fitted inside
-    tx, max_w = 160, 640
-    hf = font("sans", 84)
-    bf = font("sans", 46)
+    panel = (920, 230, 1780, 910)
+    tx, max_w = 150, 660
+    hf = font("sans", 74)
+    bf = font("sans", 44)
+    words = heading.split() or ["Demo"]
 
-    def draw_text(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
-        d.text((tx, 260), "LIVE DEMO", font=font("sans", 34), fill=_blend(ACCENT, p))
-        d.line([tx, 320, tx + 520, 320], fill=_blend(BORDER, p), width=2)
-        y = 380
-        for line in _wrap(d, heading, hf, max_w)[:2]:
-            d.text((tx, y), line, font=hf, fill=_blend(TEXT, p))
-            y += 106
-        y += 20
-        for bullet in bullets[:4]:
-            d.ellipse([tx, y + 14, tx + 14, y + 28], fill=_blend(ACCENT, p))
-            for line in _wrap(d, bullet, bf, max_w - 50)[:2]:
-                d.text((tx + 44, y), line, font=bf, fill=_blend(TEXT, p))
-                y += 60
+    def draw_text(d: ImageDraw.ImageDraw, p: float) -> None:
+        d.text((tx, 250), "FEATURE", font=font("sans", 34), fill=_blend(ACCENT, min(p * 4, 1)))
+        x, y = tx, 330
+        for wi, word in enumerate(words):
+            wp = min(max(p * len(words) * 1.5 - wi * 0.7, 0), 1)
+            if wp > 0:
+                d.text((x, y + 24 * (1 - wp)), word, font=hf, fill=_blend(TEXT, wp))
+            x += d.textlength(word + " ", font=hf)
+        sweep = min(max(p * len(words) * 1.5 - len(words) * 0.8, 0), 1)
+        if sweep > 0:
+            d.rectangle([tx, y + 116, tx + max_w * sweep, y + 122], fill=ACCENT)
+        by = y + 186
+        for bi, bullet in enumerate(bullets[:5]):
+            bp = min(max(p * (len(bullets) + 1.5) - 1 - bi * 0.9, 0), 1)
+            if bp <= 0:
+                continue
+            d.rounded_rectangle([tx, by, tx + 56, by + 44], radius=8,
+                                outline=_blend(ACCENT, bp), width=2)
+            d.text((tx + 18, by + 6), str(bi + 1), font=font("mono", 28), fill=_blend(ACCENT, bp))
+            for li, line in enumerate(_wrap(d, bullet, bf, max_w - 80)[:2]):
+                d.text((tx + 72, by + li * 2 - 2), line, font=bf, fill=_blend(TEXT, bp))
+            by += 74
 
     def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
         x0, y0, x1, y1 = panel
-        slide = int(60 * (1 - p))  # slides in from the right
-        px0, py0, px1, py1 = x0 + slide, y0, x1 + slide, y1
-        d.rounded_rectangle([px0, py0, px1, py1], radius=14, fill=(13, 16, 22))
+        d.rounded_rectangle([x0, y0, x1, y1], radius=14, fill=(13, 16, 22))
         if shot is not None:
+            zoom = 1.0 + 0.09 * p
             fit = shot.copy()
-            fit.thumbnail((px1 - px0 - 36, py1 - py0 - 36))
-            img.paste(fit, (px0 + (px1 - px0 - fit.width) // 2, py0 + (py1 - py0 - fit.height) // 2))
+            fit.thumbnail((x1 - x0 - 30, y1 - y0 - 30))
+            fit = fit.resize((int(fit.width * zoom), int(fit.height * zoom)))
+            fx = x0 + (x1 - x0 - fit.width) // 2
+            fy = y0 + (y1 - y0 - fit.height) // 2
+            img.paste(fit, (fx, fy))
+            k = 26
+            bl, bt, br, bb = fx, fy, fx + fit.width, fy + fit.height
+            for (cx, cy, dx, dy) in ((bl, bt, 1, 1), (br, bt, -1, 1), (bl, bb, 1, -1), (br, bb, -1, -1)):
+                d.line([(cx, cy + dy * k), (cx, cy)], fill=ACCENT, width=4)
+                d.line([(cx, cy), (cx + dx * k, cy)], fill=ACCENT, width=4)
+            d.rounded_rectangle([bl + 14, bt + 14, bl + 118, bt + 52], radius=8, fill=(9, 10, 15))
+            d.ellipse([bl + 26, bt + 24, bl + 40, bt + 38], fill=ACCENT)
+            d.text((bl + 50, bt + 18), "LIVE", font=font("mono", 22), fill=TEXT)
         else:
-            d.text((px0 + 40, py0 + 40), "(app preview)", font=font("sans", 36), fill=MUTED)
-        d.rounded_rectangle([px0, py0, px1, py1], radius=14,
-                            outline=_blend((251, 191, 36), p), width=3)
+            d.text((x0 + 40, y0 + 40), "(app preview)", font=font("sans", 36), fill=MUTED)
+        d.rounded_rectangle([x0, y0, x1, y1], radius=14,
+                            outline=_blend((251, 191, 36), min(p * 3, 1)), width=3)
 
-    text_frames = max(int(total_frames * 0.30), 2)
-    shot_start = int(total_frames * 0.30)
-
-    for idx in range(total_frames):
+    def render_frame(idx: int, path: Path) -> None:
         img = base_img.copy()
         d = ImageDraw.Draw(img)
+        p = idx / max(total_frames - 1, 1)
         if idx >= 2:
-            p = min((idx - 2) / max(text_frames - 2, 1), 1.0)
-            draw_text(d, img, p)
-        if idx >= shot_start:
-            p = min((idx - shot_start) / max(total_frames - shot_start - 6, 1), 1.0)
-            draw_shot(d, img, p)
-        img.save(out_dir / f"f_{idx:05d}.png")
+            draw_text(d, min(p * 2.4, 1.0))
+        if idx >= int(total_frames * 0.20):
+            draw_shot(d, img, min(
+                (idx - int(total_frames * 0.20)) / max(total_frames - int(total_frames * 0.20) - 8, 1),
+                1.0))
+        d.rectangle([48, H - 56, 48 + (W - 96) * p, H - 50], fill=ACCENT)
+        img.save(path)
+
+    for f in range(total_frames):
+        render_frame(f, out_dir / f"f_{f:05d}.png")
     return out_dir
 
 

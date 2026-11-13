@@ -42,6 +42,12 @@ TEMPLATES: dict[str, dict[str, list[str]]] = {
             "Under the surface, {name} packs a few things worth showing. Here are the highlights.",
             "These are the features that made us proud this weekend.",
         ],
+        "feature": [
+            "First up: {feat}. It works right out of the box — no setup.",
+            "Then there's {feat}. This one saves you the most time.",
+            "{feat} — honestly, this is the heart of {name}.",
+            "We're also proud of {feat}. Small detail, big difference.",
+        ],
         "stack": [
             "Under the hood, {name} is built with {stack}. Every part was chosen to ship fast and stay reliable.",
             "The tech: {stack}. Boring where it should be, sharp where it counts.",
@@ -83,6 +89,12 @@ TEMPLATES: dict[str, dict[str, list[str]]] = {
             "Jadi, apa saja yang bisa dilakukan {name}? Ini fitur-fitur utama yang kami bangun selama hackathon.",
             "Di balik permukaannya, {name} punya beberapa hal layak dipamerkan. Ini sorotannya.",
             "Inilah fitur yang membuat kami bangga akhir pekan ini.",
+        ],
+        "feature": [
+            "Pertama: {feat}. Langsung jalan tanpa setup.",
+            "Lalu ada {feat}. Ini yang paling menghemat waktu.",
+            "{feat} — sejujurnya, ini jantungnya {name}.",
+            "Kami juga bangga dengan {feat}. Detail kecil, dampak besar.",
         ],
         "stack": [
             "Di balik layar, {name} dibangun dengan {stack}. Semua dipilih agar cepat dirilis dan tetap andal.",
@@ -174,12 +186,13 @@ def generate_draft(project_folder: str, app_url: str, language: str, crawl_limit
 
     # App walkthrough scenes are added by main.py after crawling (needs app_url live).
     # Placeholder markers are returned in meta so the caller knows what to insert.
-    if facts.get("features"):
+    # One scene per feature — the video explains every feature, Teams-style.
+    for fi, feat in enumerate(facts.get("features", [])[:4]):
         scenes.append(
             new_scene(
-                title="Key Features",
-                narration=humanize(_pick(rng, tpl["features"]).format(name=name)),
-                visual={"type": "card", "card": {"kind": "bullets", "heading": "Key Features", "bullets": facts["features"][:5]}},
+                title=f"Feature: {feat[:34]}"[:48],
+                narration=humanize(_pick(rng, tpl["feature"]).format(feat=feat, name=name)),
+                visual={"type": "card", "card": {"kind": "title", "heading": feat[:70], "bullets": []}},
             )
         )
     if facts.get("stack"):

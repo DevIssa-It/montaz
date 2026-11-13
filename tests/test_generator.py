@@ -9,9 +9,12 @@ def test_draft_has_core_scenes(mini_repo):
     titles = [s["title"] for s in scenes]
     assert "Intro" in titles
     assert "The Problem" in titles
-    assert "Key Features" in titles
     assert "Built With" in titles
     assert "Outro" in titles
+    # Per-feature scenes explain every feature (Teams-style walkthrough).
+    feature_scenes = [t for t in titles if t.startswith("Feature:")]
+    assert len(feature_scenes) == 3  # mini repo has 3 features
+    assert any("Smart search" in t for t in feature_scenes)
     # Every scene carries a visual and a unique id.
     ids = [s["id"] for s in scenes]
     assert len(ids) == len(set(ids))

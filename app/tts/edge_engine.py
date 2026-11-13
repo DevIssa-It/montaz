@@ -41,17 +41,15 @@ class EdgeEngine(TTSEngine):
         if not text.strip():
             raise TTSError("Teks narasi kosong.")
         pros = prosody or {}
-        # Microsoft's endpoint flakes occasionally (socket timeouts); retry
-        # briefly with backoff instead of failing the whole render.
+        kwargs = {k: v for k, v in (("rate", pros.get("rate")), ("pitch", pros.get("pitch"))) if v}
+        # Microsoft's endpoint flakes occasionally; retry with backoff instead
+        # of failing the whole render.
         last_exc: Exception | None = None
-        for attempt, delay in enumerate((0, 1.5, 4.0), start=1):
+        for attempt, delay in enumerate((0, 1.5, 4.0, 8.0, 12.0), start=1):
             if delay:
                 await asyncio.sleep(delay)
             try:
-                await edge_tts.Communicate(
-                    text, voice_id,
-                    rate=pros.get("rate"), pitch=pros.get("pitch"),
-                ).save(out_path)
+                await edge_tts.Communicate(text, voice_id, **kwargs).save(out_path)
                 return
             except Exception as exc:  # noqa: BLE001
                 last_exc = exc
