@@ -1,4 +1,4 @@
-import type { EngineInfo, Project, RenderStatusInfo, Scene, Settings, VoiceInfo } from "@/types"
+import type { AssetInfo, EngineInfo, Project, RenderStatusInfo, Scene, Settings, VoiceInfo } from "@/types"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(path, {
@@ -71,6 +71,15 @@ export const api = {
       body: form,
     })
   },
+
+  listAssets: (id: string) =>
+    request<AssetInfo[]>(`/api/projects/${id}/assets`),
+
+  generateAsset: (id: string, prompt: string, sceneId?: string) =>
+    request<{ ok: boolean; path: string; url: string; project?: Project }>(
+      `/api/projects/${id}/assets/generate`,
+      { method: "POST", body: JSON.stringify({ prompt, scene_id: sceneId ?? null }) }
+    ),
 
   render: (id: string) =>
     request<{ ok: boolean; state: string }>(`/api/projects/${id}/render`, { method: "POST" }),

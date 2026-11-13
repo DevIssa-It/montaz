@@ -10,6 +10,7 @@ Security model (local single-user tool):
 from __future__ import annotations
 
 import threading
+import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
@@ -235,6 +236,64 @@ async def upload_asset(pid: str, file: UploadFile) -> dict:
     dest = assets_dir / safe_name
     dest.write_bytes(await file.read())
     return {"ok": True, "path": f"assets/{safe_name}", "url": f"/api/data/{pid}/assets/{safe_name}"}
+
+
+@app.get("/api/projects/{pid}/assets")
+def list_assets(pid: str) -> list[dict]:
+    """Asset bin: everything in the project's assets folder, newest first."""
+    project = project_store.get_project(pid)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan.")
+    assets_dir = project_store.project_dir(pid) / "assets"
+    items: list[dict] = []
+    if assets_dir.exists():
+        for f in sorted(assets_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if f.is_file() and not f.name.startswith("."):
+                items.append(
+                    {
+                        "path": f"assets/{f.name}",
+                        "url": f"/api/data/{pid}/assets/{f.name}",
+                        "size": f.stat().st_size,
+                        "kind": "video" if f.suffix.lower() in {".mp4", ".webm", ".mov"} else "image",
+                    }
+                )
+    return items
+
+
+class AssetGenerateRequest(BaseModel):
+    prompt: str
+    scene_id: str | None = None  # attach to this scene when given
+
+
+@app.post("/api/projects/{pid}/assets/generate")
+async def generate_asset(pid: str, body: AssetGenerateRequest) -> dict:
+    """Generate an image with the user's AI key; optionally attach it to a scene."""
+    from . import assetgen
+
+    project = project_store.get_project(pid)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan.")
+    keys = settings_mod.load_settings().get("api_keys", {})
+    assets_dir = project_store.project_dir(pid) / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    out = assets_dir / f"gen_{uuid.uuid4().hex[:8]}.png"
+    try:
+        await assetgen.generate_image(body.prompt, keys, out)
+    except assetgen.AssetGenError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    result = {
+        "ok": True,
+        "path": f"assets/{out.name}",
+        "url": f"/api/data/{pid}/assets/{out.name}",
+    }
+    if body.scene_id:
+        scene = next((s for s in project["scenes"] if s["id"] == body.scene_id), None)
+        if scene is None:
+            raise HTTPException(status_code=404, detail="Scene tidak ditemukan.")
+        scene["visual"] = {"type": "image", "path": result["path"]}
+        project_store.update_project(pid, {"scenes": project["scenes"]})
+        result["project"] = project_store.get_project(pid)
+    return result
 
 
 # ---------------------------------------------------------------- native picker

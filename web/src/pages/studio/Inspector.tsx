@@ -1,3 +1,6 @@
+import { useState } from "react"
+import { toast } from "sonner"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { visualLabel } from "@/lib/api"
+import { api, visualLabel } from "@/lib/api"
 import type { Project, Scene, VisualType } from "@/types"
 import { ActionsEditor } from "@/pages/studio/ActionsEditor"
 import { CardFields } from "@/pages/studio/CardFields"
@@ -29,6 +32,21 @@ interface Props {
 /** Right-panel form for the selected scene: narration + visual configuration. */
 export function Inspector({ scene, project, onUpdate, onPreviewAudio, onUploadAsset, previewing, onDelete }: Props) {
   const v = scene.visual
+  const [genning, setGenning] = useState(false)
+
+  // Turn the scene's narration into an AI frame and attach it instantly.
+  const generateFromNarration = async () => {
+    setGenning(true)
+    try {
+      const result = await api.generateAsset(project.id, scene.narration, scene.id)
+      onUpdate({ visual: { type: "image", path: result.path } })
+      toast.success(`AI frame attached: ${result.path.split("/").pop()}`)
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setGenning(false)
+    }
+  }
   return (
     <div className="space-y-4 px-3 py-3">
       <div className="space-y-2">
@@ -54,6 +72,16 @@ export function Inspector({ scene, project, onUpdate, onPreviewAudio, onUploadAs
         />
         <Button size="sm" variant="outline" className="w-full" onClick={onPreviewAudio} disabled={previewing || !scene.narration.trim()}>
           {previewing ? "Synthesizing…" : scene.audio ? "Re-synthesize & play" : "Synthesize & play"}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="w-full"
+          onClick={() => void generateFromNarration()}
+          disabled={genning || !scene.narration.trim()}
+          title="Generate an image from this narration with your AI key and attach it as the scene frame"
+        >
+          {genning ? "Generating AI frame…" : "✨ AI frame from narration"}
         </Button>
       </div>
 

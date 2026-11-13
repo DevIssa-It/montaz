@@ -5,11 +5,12 @@ import { SettingsModal } from "@/components/SettingsModal"
 import { SplashScreen } from "@/components/SplashScreen"
 import { Toaster } from "@/components/ui/sonner"
 import { api } from "@/lib/api"
+import { AssetsPage } from "@/pages/AssetsPage"
 import { HomePage } from "@/pages/HomePage"
 import { StudioPage } from "@/pages/studio/StudioPage"
 import type { Project } from "@/types"
 
-type View = "home" | "studio"
+type View = "home" | "assets" | "studio"
 type BootPhase = "splash" | "fading" | "ready"
 
 // Activity bar: icon rail, VS Code-style. Icons echo the mark's geometry.
@@ -21,6 +22,17 @@ const RAIL: { id: View; label: string; icon: ReactElement }[] = [
       <g>
         <rect x="3" y="4.5" width="18" height="15" rx="2" />
         <path d="M8 4.5 V19.5 M16 4.5 V19.5" />
+      </g>
+    ),
+  },
+  {
+    id: "assets",
+    label: "Assets",
+    icon: (
+      <g>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="9" cy="9" r="1.8" />
+        <path d="M21 15.5 L16.5 11 L6.5 21" />
       </g>
     ),
   },
@@ -219,6 +231,13 @@ export default function App() {
               onRefresh={refreshProjects}
               activeProjectId={activeProjectId}
               onOpenStudio={openStudio}
+            />
+          )}
+          {view === "assets" && (
+            <AssetsPage
+              project={activeProject}
+              onProjectUpdated={onProjectUpdated}
+              onOpenSettings={() => setSettingsOpen(true)}
             />
           )}
           {view === "studio" && <StudioPage project={activeProject} onProjectUpdated={onProjectUpdated} />}

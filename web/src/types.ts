@@ -72,6 +72,13 @@ export interface VoiceInfo {
   gender: string
 }
 
+export interface AssetInfo {
+  path: string
+  url: string
+  size: number
+  kind: "image" | "video"
+}
+
 export interface RenderStatusInfo {
   state: "idle" | "running" | "done" | "error"
   progress: number
