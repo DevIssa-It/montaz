@@ -67,6 +67,18 @@ def _human_click(page, selector: str, timeout: int = 8000) -> None:
     loc.click(timeout=timeout)
 
 
+def screenshot_url(url: str, out_path: Path) -> Path:
+    """One still screenshot of a live page (brand asset for split cards)."""
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page(viewport=VIEWPORT)
+        page.goto(url, wait_until="domcontentloaded", timeout=15000)
+        page.wait_for_timeout(700)
+        page.screenshot(path=str(out_path))
+        browser.close()
+    return out_path
+
+
 def _apply_action(page, action: dict[str, Any], rng) -> float:
     """Run one action on the page; returns seconds consumed (for record)."""
     kind = action.get("do")

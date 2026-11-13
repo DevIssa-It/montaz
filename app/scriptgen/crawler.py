@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 import httpx
@@ -21,10 +22,25 @@ def _title_of(html: str) -> str:
     return re.sub(r"<[^>]+>|\s+", " ", match.group(1)).strip()[:80] if match else ""
 
 
-async def crawl_site(app_url: str) -> list[dict[str, str]]:
-    """Breadth-first crawl from app_url; returns [{'url','title'}] including the landing page."""
+def _links_of(html: str, base: str) -> list[dict[str, str]]:
+    """Internal links with visible text: [{'href','text'}], crawled order."""
+    found: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for m in re.finditer(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', html, re.IGNORECASE | re.DOTALL):
+        href, inner = m.group(1), m.group(2)
+        absolute = urljoin(base, href).split("#", 1)[0].rstrip("/")
+        text = re.sub(r"<[^>]+>|\s+", " ", inner).strip()[:40]
+        if not text or absolute in seen or not _same_origin(base, absolute):
+            continue
+        seen.add(absolute)
+        found.append({"href": href, "text": text})
+    return found[:6]
+
+
+async def crawl_site(app_url: str) -> list[dict[str, Any]]:
+    """Breadth-first crawl from app_url; returns pages with url/title/links."""
     app_url = app_url.rstrip("/")
-    pages: list[dict[str, str]] = []
+    pages: list[dict[str, Any]] = []
     seen: set[str] = set()
     queue: list[str] = [app_url]
     async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
@@ -41,7 +57,14 @@ async def crawl_site(app_url: str) -> list[dict[str, str]]:
                     continue
             except httpx.HTTPError:
                 continue
-            pages.append({"url": str(resp.url).split("#")[0], "title": _title_of(resp.text) or url})
+            page_url = str(resp.url).split("#")[0]
+            pages.append(
+                {
+                    "url": page_url,
+                    "title": _title_of(resp.text) or url,
+                    "links": _links_of(resp.text, page_url),
+                }
+            )
             for href in re.findall(r'href=["\']([^"\']+)["\']', resp.text)[:40]:
                 absolute = urljoin(str(resp.url), href)
                 absolute = absolute.split("#", 1)[0].rstrip("/")

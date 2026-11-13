@@ -137,6 +137,79 @@ def render_card(kind: str, heading: str, bullets: list[str], out_path: Path) -> 
     return out_path
 
 
+def render_split_frames(
+    heading: str,
+    bullets: list[str],
+    shot_path: Path | None,
+    out_dir: Path,
+    total_seconds: float,
+    fps: int = 10,
+    counter: tuple[int, int] | None = None,
+) -> Path:
+    """Split-layout card: narration beats land on the LEFT while the app's
+    REAL screenshot slides in on the RIGHT (gold frame) — the visual asset
+    the deck was missing."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    base_img, _ = _deco_base(counter)
+    total_frames = max(int(round(total_seconds * fps)), fps)
+
+    shot: Image.Image | None = None
+    if shot_path and Path(shot_path).exists():
+        try:
+            shot = Image.open(shot_path).convert("RGB")
+        except Exception:
+            shot = None
+
+    # Layout: text column left (160..860), app panel right (940..1760)
+    panel = (940, 240, 1760, 900)  # 820x660 → shot fitted inside
+    tx, max_w = 160, 640
+    hf = font("sans", 84)
+    bf = font("sans", 46)
+
+    def draw_text(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
+        d.text((tx, 260), "LIVE DEMO", font=font("sans", 34), fill=_blend(ACCENT, p))
+        d.line([tx, 320, tx + 520, 320], fill=_blend(BORDER, p), width=2)
+        y = 380
+        for line in _wrap(d, heading, hf, max_w)[:2]:
+            d.text((tx, y), line, font=hf, fill=_blend(TEXT, p))
+            y += 106
+        y += 20
+        for bullet in bullets[:4]:
+            d.ellipse([tx, y + 14, tx + 14, y + 28], fill=_blend(ACCENT, p))
+            for line in _wrap(d, bullet, bf, max_w - 50)[:2]:
+                d.text((tx + 44, y), line, font=bf, fill=_blend(TEXT, p))
+                y += 60
+
+    def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
+        x0, y0, x1, y1 = panel
+        slide = int(60 * (1 - p))  # slides in from the right
+        px0, py0, px1, py1 = x0 + slide, y0, x1 + slide, y1
+        d.rounded_rectangle([px0, py0, px1, py1], radius=14, fill=(13, 16, 22))
+        if shot is not None:
+            fit = shot.copy()
+            fit.thumbnail((px1 - px0 - 36, py1 - py0 - 36))
+            img.paste(fit, (px0 + (px1 - px0 - fit.width) // 2, py0 + (py1 - py0 - fit.height) // 2))
+        else:
+            d.text((px0 + 40, py0 + 40), "(app preview)", font=font("sans", 36), fill=MUTED)
+        d.rounded_rectangle([px0, py0, px1, py1], radius=14,
+                            outline=_blend((251, 191, 36), p), width=3)
+
+    text_frames = max(int(total_frames * 0.30), 2)
+    shot_start = int(total_frames * 0.30)
+
+    for idx in range(total_frames):
+        img = base_img.copy()
+        d = ImageDraw.Draw(img)
+        if idx >= 2:
+            p = min((idx - 2) / max(text_frames - 2, 1), 1.0)
+            draw_text(d, img, p)
+        if idx >= shot_start:
+            p = min((idx - shot_start) / max(total_frames - shot_start - 6, 1), 1.0)
+            draw_shot(d, img, p)
+        img.save(out_dir / f"f_{idx:05d}.png")
+    return out_dir
+
+
 def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Path:
     """Single terminal-window frame (for timeline thumbnails)."""
     img = Image.new("RGB", (W, H), BG)

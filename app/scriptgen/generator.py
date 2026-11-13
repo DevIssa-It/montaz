@@ -201,20 +201,43 @@ def generate_draft(project_folder: str, app_url: str, language: str, crawl_limit
     return scenes
 
 
-def page_scenes(pages: list[dict[str, str]], language: str) -> list[dict[str, Any]]:
+def _walk_actions(pages: list[dict[str, Any]], index: int) -> list[dict[str, Any]]:
+    """Real walkthrough steps for one page: open, breathe, scroll, then CLICK
+    the link that leads to the next demoed page (cursor + ripple fire for real)."""
+    page = pages[index]
+    actions: list[dict[str, Any]] = [
+        {"do": "goto", "url": page["url"]},
+        {"do": "wait", "ms": 700},
+        {"do": "scroll", "delta": 500},
+    ]
+    if index + 1 < len(pages):
+        next_url = pages[index + 1]["url"].rstrip("/")
+        for link in page.get("links", []):
+            from urllib.parse import urljoin
+
+            absolute = urljoin(page["url"], link["href"]).split("#", 1)[0].rstrip("/")
+            if absolute == next_url:
+                actions.append({"do": "click", "selector": f'a[href="{link["href"]}"]'})
+                actions.append({"do": "wait", "ms": 600})
+                break
+    actions.append({"do": "record"})
+    return actions
+
+
+def page_scenes(pages: list[dict[str, Any]], language: str) -> list[dict[str, Any]]:
     """Browser-capture scenes for crawled pages; inserted after the problem scene."""
     tpl = _templates(language)
     scenes = []
-    for page in pages[:4]:
+    for index, page in enumerate(pages[:4]):
         title = page.get("title") or page["url"]
         rng = _rng_for(title)
-        extra = _pick(rng, tpl["page_extra"]) if page is pages[0] else ""
+        extra = _pick(rng, tpl["page_extra"]) if index == 0 else ""
         narration = humanize(_pick(rng, tpl["page"]).format(page=title, extra=extra))
         scenes.append(
             new_scene(
                 title=f"Demo: {title}"[:60],
                 narration=narration,
-                visual={"type": "browser", "actions": [{"do": "goto", "url": page["url"]}, {"do": "wait", "ms": 800}, {"do": "record"}]},
+                visual={"type": "browser", "actions": _walk_actions(pages, index)},
             )
         )
     return scenes

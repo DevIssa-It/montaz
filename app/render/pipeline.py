@@ -97,6 +97,15 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
     # 2) Per-scene visual + segment.
     total = len(scenes)
     segments: list[Path] = []
+    # One real screenshot of the running app — reused by every split card.
+    app_shot: Path | None = None
+    if project.get("app_url"):
+        try:
+            app_shot = browser_capture.screenshot_url(
+                project["app_url"], work / "app_shot.png"
+            )
+        except Exception:  # noqa: BLE001 - app down? cards degrade gracefully
+            app_shot = None
     for i, scene in enumerate(scenes):
         frac = 0.35 + 0.55 * i / total
         status.step(frac, f"Scene {i + 1}/{total}: {scene.get('title') or scene['id']}")
@@ -108,10 +117,10 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
 
         if vtype == "card":
             card = visual.get("card") or {}
-            frames = cards.render_card_frames(
-                card.get("kind", "title"),
-                card.get("heading", ""),
+            frames = cards.render_split_frames(
+                card.get("heading") or scene.get("title", ""),
                 card.get("bullets", []),
+                app_shot,
                 work / f"cardf_{i:03d}",
                 duration,
                 fps=10,
