@@ -109,6 +109,9 @@ def concat_segments(segment_paths: list[Path], out_path: Path) -> Path:
         return _concat_hardcut(segment_paths, out_path)
 
 
+TRANSITIONS = ["slideleft", "smoothleft", "circleopen", "fade", "smoothup"]
+
+
 def _concat_xfade(segment_paths: list[Path], out_path: Path) -> Path:
     durations = [probe_duration(p) for p in segment_paths]
     inputs: list[str] = []
@@ -119,9 +122,10 @@ def _concat_xfade(segment_paths: list[Path], out_path: Path) -> Path:
     offset = 0.0
     for i in range(1, len(segment_paths)):
         offset += durations[i - 1] - XFADE
+        transition = TRANSITIONS[(i - 1) % len(TRANSITIONS)]
         vout, aout = f"v{i}", f"a{i}"
         filters.append(
-            f"[{vprev}][{i}:v]xfade=transition=fade:duration={XFADE}:offset={offset:.3f}[{vout}]"
+            f"[{vprev}][{i}:v]xfade=transition={transition}:duration={XFADE}:offset={offset:.3f}[{vout}]"
         )
         filters.append(f"[{aprev}][{i}:a]acrossfade=d={XFADE}:c1=tri:c2=tri[{aout}]")
         vprev, aprev = vout, aout

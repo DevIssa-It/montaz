@@ -97,15 +97,26 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
     # 2) Per-scene visual + segment.
     total = len(scenes)
     segments: list[Path] = []
-    # One real screenshot of the running app — reused by every split card.
-    app_shot: Path | None = None
+    # Two real app screenshots (home + first demoed page) — feature cards
+    # CUT between them mid-scene so the panel shows navigation.
+    shots: list[Path] = []
     if project.get("app_url"):
         try:
-            app_shot = browser_capture.screenshot_url(
-                project["app_url"], work / "app_shot.png"
-            )
+            shots.append(browser_capture.screenshot_url(
+                project["app_url"], work / "app_shot_1.png"))
         except Exception:  # noqa: BLE001 - app down? cards degrade gracefully
-            app_shot = None
+            shots = []
+        if shots:
+            first_page = next(
+                (a.get("url") for s in scenes if s.get("visual", {}).get("type") == "browser"
+                 for a in (s["visual"].get("actions") or []) if a.get("do") == "goto"),
+                None,
+            )
+            if first_page:
+                try:
+                    shots.append(browser_capture.screenshot_url(first_page, work / "app_shot_2.png"))
+                except Exception:  # noqa: BLE001
+                    pass
     for i, scene in enumerate(scenes):
         frac = 0.35 + 0.55 * i / total
         status.step(frac, f"Scene {i + 1}/{total}: {scene.get('title') or scene['id']}")
@@ -120,7 +131,7 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
             frames = cards.render_split_frames(
                 card.get("heading") or scene.get("title", ""),
                 card.get("bullets", []),
-                app_shot,
+                shots,
                 work / f"cardf_{i:03d}",
                 duration,
                 fps=10,

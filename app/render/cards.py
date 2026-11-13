@@ -168,101 +168,17 @@ def render_card(kind: str, heading: str, bullets: list[str], out_path: Path) -> 
 def render_split_frames(
     heading: str,
     bullets: list[str],
-    shot_path: Path | None,
+    shots: list[Path] | None,
     out_dir: Path,
     total_seconds: float,
     fps: int = 10,
     counter: tuple[int, int] | None = None,
 ) -> Path:
-    """Kinetic split card on the indigo field, Teams-intro style:
-    left  — FEATURE label, word-by-word heading landing with a gold
-            underline sweep, numbered bullets staggering in
-    right — white panel with the app's REAL screenshot riding a Ken Burns
-            zoom, gold corner brackets + LIVE badge
-    bottom — thin gold film-progress line
-    """
-    out_dir.mkdir(parents=True, exist_ok=True)
-    base_img, _ = _base_bg(counter)
-    total_frames = max(int(round(total_seconds * fps)), fps)
-    heading = heading[:70]
+    """Kinetic split card (Teams-intro style) — implemented in kinetic.py."""
+    # Lazy import: kinetic imports shared helpers from this module.
+    from .kinetic import render_split_frames as _impl
 
-    shot: Image.Image | None = None
-    if shot_path and Path(shot_path).exists():
-        try:
-            shot = Image.open(shot_path).convert("RGB")
-        except Exception:
-            shot = None
-
-    panel = (940, 190, 1800, 880)
-    tx, max_w = 130, 700
-    hf = font("sans", 72)
-    bf = font("sans", 44)
-    words = heading.split() or ["Demo"]
-
-    def draw_text(d: ImageDraw.ImageDraw, p: float) -> None:
-        d.text((tx, 210), "FEATURE", font=font("sans", 34), fill=_blend(GOLD, min(p * 4, 1)))
-        x, y = tx, 300
-        for wi, word in enumerate(words):
-            wp = min(max(p * len(words) * 1.5 - wi * 0.7, 0), 1)
-            if wp > 0:
-                d.text((x, y + 24 * (1 - wp)), word, font=hf, fill=_blend(TEXT_LIGHT, wp))
-            x += d.textlength(word + " ", font=hf)
-        sweep = min(max(p * len(words) * 1.5 - len(words) * 0.8, 0), 1)
-        if sweep > 0:
-            d.rectangle([tx, y + 112, tx + max_w * sweep, y + 118], fill=GOLD)
-        by = y + 180
-        for bi, bullet in enumerate(bullets[:5]):
-            bp = min(max(p * (len(bullets) + 1.5) - 1 - bi * 0.9, 0), 1)
-            if bp <= 0:
-                continue
-            d.rounded_rectangle([tx, by, tx + 54, by + 42], radius=8,
-                                outline=_blend(GOLD, bp), width=2)
-            d.text((tx + 17, by + 5), str(bi + 1), font=font("mono", 26), fill=_blend(GOLD, bp))
-            for li, line in enumerate(_wrap(d, bullet, bf, max_w - 76)[:2]):
-                d.text((tx + 70, by + li * 2 - 2), line, font=bf, fill=_blend(TEXT_LIGHT, bp))
-            by += 70
-
-    def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
-        x0, y0, x1, y1 = panel
-        _panel(img, d, (x0, y0, x1, y1))
-        if shot is not None:
-            zoom = 1.0 + 0.09 * p
-            fit = shot.copy()
-            fit.thumbnail((x1 - x0 - 44, y1 - y0 - 44))
-            fit = fit.resize((int(fit.width * zoom), int(fit.height * zoom)))
-            fx = x0 + (x1 - x0 - fit.width) // 2
-            fy = y0 + (y1 - y0 - fit.height) // 2
-            img.paste(fit, (fx, fy))
-            k = 24
-            bl, bt, br, bb = fx, fy, fx + fit.width, fy + fit.height
-            for (cx, cy, dx, dy) in ((bl, bt, 1, 1), (br, bt, -1, 1), (bl, bb, 1, -1), (br, bb, -1, -1)):
-                d.line([(cx, cy + dy * k), (cx, cy)], fill=GOLD, width=4)
-                d.line([(cx, cy), (cx + dx * k, cy)], fill=GOLD, width=4)
-            d.rounded_rectangle([bl + 12, bt + 12, bl + 114, bt + 50], radius=8, fill=(9, 10, 15))
-            d.ellipse([bl + 24, bt + 22, bl + 38, bt + 36], fill=GOLD)
-            d.text((bl + 46, bt + 16), "LIVE", font=font("mono", 22), fill=TEXT_LIGHT)
-        else:
-            d.text((x0 + 40, y0 + 40), "(app preview)", font=font("sans", 36), fill=(150, 150, 170))
-        d.rounded_rectangle([x0, y0, x1, y1], radius=18,
-                            outline=_blend(GOLD, min(p * 3, 1)), width=3)
-
-    def render_frame(idx: int, path: Path) -> None:
-        img = base_img.copy()
-        d = ImageDraw.Draw(img)
-        _ornaments(d, idx)
-        p = idx / max(total_frames - 1, 1)
-        if idx >= 2:
-            draw_text(d, min(p * 2.4, 1.0))
-        if idx >= int(total_frames * 0.20):
-            draw_shot(d, img, min(
-                (idx - int(total_frames * 0.20)) / max(total_frames - int(total_frames * 0.20) - 8, 1),
-                1.0))
-        d.rectangle([48, H - 40, 48 + (W - 96) * p, H - 34], fill=GOLD)
-        img.save(path)
-
-    for f in range(total_frames):
-        render_frame(f, out_dir / f"f_{f:05d}.png")
-    return out_dir
+    return _impl(heading, bullets, shots, out_dir, total_seconds, fps, counter)
 
 
 def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Path:
