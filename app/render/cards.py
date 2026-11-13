@@ -1,8 +1,10 @@
-"""Render 1920x1080 scene cards (title / bullets / stack) + animated terminal frames.
+"""Render 1920x1080 scene visuals for montaz.
 
-Palette follows DESIGN.md Archetype B (Developer Tools):
-pitch canvas #090A0F, card #12141A, text #EDEDED, muted #8B8F9A,
-brand gold #FBBF24 (projector beam), hairline border #1C1D24.
+Video style follows the reference (Teams-style product intro):
+- a vivid indigo field with large organic curves (no black voids)
+- drifting gold/white rings and dots for life
+- app demo lives inside a WHITE panel with soft shadow, Ken-Burns'd
+- dark text on white panels, white/gold text on the indigo field
 """
 from __future__ import annotations
 
@@ -12,13 +14,15 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1920, 1080
-BG = (9, 10, 15)
-CARD = (18, 20, 26)
-TEXT = (237, 237, 237)
-MUTED = (139, 143, 154)
-ACCENT = (251, 191, 36)
-BORDER = (28, 29, 36)
-TERM_BG = (10, 13, 20)
+INDIGO = (88, 87, 214)
+INDIGO_CURVE = (63, 62, 176)
+INDIGO_DEEP = (51, 50, 158)
+PANEL = (255, 255, 255)
+TEXT_DARK = (24, 26, 32)
+TEXT_LIGHT = (255, 255, 255)
+MUTED_LIGHT = (216, 216, 244)
+GOLD = (251, 191, 36)
+TERM_BG = (13, 16, 22)
 
 FONT_CANDIDATES = {
     "sans": [
@@ -61,77 +65,101 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont, max
     return lines
 
 
-def _deco_base(counter: tuple[int, int] | None = None) -> tuple[Image.Image, ImageDraw.ImageDraw]:
-    """Editorial canvas: pitch bg + faint dot grid + hairline frame + brand footer
-    + optional scene counter chip ('03 / 07' deck style)."""
-    img = Image.new("RGB", (W, H), BG)
+def _blend(fg: tuple[int, int, int], p: float) -> tuple[int, int, int]:
+    """Fade a foreground color in from the indigo field."""
+    return tuple(int(INDIGO[i] + (fg[i] - INDIGO[i]) * p) for i in range(3))
+
+
+def _base_bg(counter: tuple[int, int] | None = None) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    """Vivid indigo field + two large organic curves + brand footer + counter."""
+    img = Image.new("RGB", (W, H), INDIGO)
     draw = ImageDraw.Draw(img)
-    # faint dot grid (structure, not noise)
-    for gx in range(120, W - 60, 64):
-        for gy in range(120, H - 60, 64):
-            draw.ellipse([gx, gy, gx + 3, gy + 3], fill=(26, 27, 34))
-    # hairline frame + accent tick
-    draw.rectangle([48, 48, W - 48, H - 48], outline=BORDER, width=2)
-    draw.rectangle([48, 48, 96, 48 + 6], fill=ACCENT)
+    # large organic curves (reference-style depth, no flat void)
+    draw.ellipse([W - 900, -500, W + 900, H + 200], fill=INDIGO_CURVE)
+    draw.ellipse([-500, H - 520, 900, H + 700], fill=INDIGO_DEEP)
+    draw.ellipse([W - 620, H - 900, W + 560, H - 120], fill=INDIGO_CURVE)
     # brand footer
-    draw.rectangle([W - 470, H - 74, W - 440, H - 66], fill=ACCENT)
-    draw.text((W - 424, H - 84), "montaz", font=font("sans", 30), fill=MUTED)
-    draw.text((W - 424, H - 46), "many cuts, one story", font=font("sans", 22), fill=(90, 94, 104))
-    # scene counter chip
+    draw.rectangle([W - 470, H - 74, W - 440, H - 66], fill=GOLD)
+    draw.text((W - 424, H - 84), "montaz", font=font("sans", 30), fill=TEXT_LIGHT)
     if counter:
         idx, total = counter
         label = f"{idx:02d} / {total:02d}"
         fnt = font("mono", 34)
         tw = draw.textlength(label, font=fnt)
         draw.rounded_rectangle(
-            [W - 160 - tw - 44, 70, W - 116, 126], radius=10, outline=BORDER, width=2
+            [W - 160 - tw - 44, 64, W - 116, 120], radius=10, fill=(70, 69, 185)
         )
-        draw.text((W - 160 - tw - 22, 78), label, font=fnt, fill=MUTED)
+        draw.text((W - 160 - tw - 22, 72), label, font=fnt, fill=TEXT_LIGHT)
     return img, draw
 
 
-def _blend(fg: tuple[int, int, int], p: float) -> tuple[int, int, int]:
-    """Fade a foreground color in from the background (alpha-by-color)."""
-    return tuple(int(BG[i] + (fg[i] - BG[i]) * p) for i in range(3))
+def _ornaments(draw: ImageDraw.ImageDraw, idx: int) -> None:
+    """Drifting gold/white rings and dots behind the panels."""
+    items = [
+        (210, 180, 26, GOLD, 0.9), (420, 620, 16, TEXT_LIGHT, 0.55),
+        (120, 800, 34, GOLD, 0.5), (640, 130, 14, TEXT_LIGHT, 0.5),
+        (760, 880, 30, GOLD, 0.45), (1770, 150, 22, GOLD, 0.6),
+        (1660, 620, 13, TEXT_LIGHT, 0.5), (W - 150, 880, 34, GOLD, 0.5),
+        (1020, 120, 12, TEXT_LIGHT, 0.45),
+    ]
+    for k, (x, y, r, color, alpha) in enumerate(items):
+        dx = int(math.sin(idx * 0.12 + k * 1.7) * 12)
+        dy = int(math.cos(idx * 0.09 + k * 2.1) * 9)
+        col = tuple(int(INDIGO[i] + (color[i] - INDIGO[i]) * alpha) for i in range(3))
+        draw.ellipse([x + dx - r, y + dy - r, x + dx + r, y + dy + r], fill=col)
+
+
+def _panel(img: Image.Image, draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], radius: int = 18) -> None:
+    """White panel with a soft fake shadow (layered rounded rects)."""
+    x0, y0, x1, y1 = box
+    for grow, shade in ((46, (44, 43, 150)), (28, (52, 51, 165)), (14, (60, 59, 180))):
+        draw.rounded_rectangle(
+            [x0 - grow, y0 - grow * 0.4, x1 + grow, y1 + grow], radius=radius + grow,
+            fill=shade,
+        )
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=PANEL)
 
 
 def render_card(kind: str, heading: str, bullets: list[str], out_path: Path) -> Path:
-    img, draw = _deco_base()
-    left, max_w = 160, W - 320
+    """Static card (timeline thumbnails): indigo field + white panel + dark text."""
+    img, draw = _base_bg()
+    _ornaments(draw, 12)
+    box = (300, 170, W - 300, H - 190)
+    _panel(img, draw, box)
+    px, py = box[0] + 60, box[1] + 54
+    draw = ImageDraw.Draw(img)
     if kind == "title":
-        y = H // 2 - 60
-        for line in _wrap(draw, heading or "Untitled Project", font("sans", 110), max_w)[:2]:
-            draw.text((left, y), line, font=font("sans", 110), fill=TEXT)
-            y += 140
-        y += 24
-        for line in _wrap(draw, bullets[0] if bullets else "", font("sans", 52), max_w)[:2]:
-            draw.text((left, y), line, font=font("sans", 52), fill=MUTED)
-            y += 66
-    else:  # bullets | stack
-        label = (heading or "").upper()
-        draw.text((left, 170), label, font=font("sans", 44), fill=ACCENT)
-        draw.line([left, 240, left + 720, 240], fill=BORDER, width=2)
-        y = 300
+        draw.rectangle([px, py, px + 110, py + 8], fill=GOLD)
+        y = py + 66
+        for line in _wrap(draw, heading or "Untitled Project", font("sans", 92), box[2] - box[0] - 120)[:2]:
+            draw.text((px, y), line, font=font("sans", 92), fill=TEXT_DARK)
+            y += 118
+        y += 16
+        for line in _wrap(draw, bullets[0] if bullets else "", font("sans", 42), box[2] - box[0] - 120)[:2]:
+            draw.text((px, y), line, font=font("sans", 42), fill=(96, 100, 118))
+            y += 56
+    else:
+        draw.text((px, py), (heading or "").upper(), font=font("sans", 40), fill=(202, 148, 12))
+        draw.line([px, py + 62, px + 620, py + 62], fill=(225, 227, 236), width=2)
+        y = py + 106
         if kind == "bullets":
             for bullet in bullets[:5]:
-                draw.ellipse([left, y + 26, left + 14, y + 40], fill=ACCENT)
-                for i, line in enumerate(_wrap(draw, bullet, font("sans", 58), max_w - 60)[:2]):
-                    draw.text((left + 56, y), line, font=font("sans", 58), fill=TEXT)
-                    y += 72
-                y += 26
-        else:  # stack chips
-            x, row_h = left, 0
+                draw.ellipse([px, y + 18, px + 12, y + 30], fill=GOLD)
+                for line in _wrap(draw, bullet, font("sans", 46), box[2] - box[0] - 130)[:2]:
+                    draw.text((px + 44, y), line, font=font("sans", 46), fill=TEXT_DARK)
+                    y += 62
+                y += 18
+        else:
+            x, row = px, 0
             for item in bullets[:8]:
-                fnt = font("mono", 46)
-                chip_w = int(draw.textlength(item, font=fnt)) + 72
-                if x + chip_w > W - 160:
-                    x, y = left, y + row_h + 28
-                    if y > H - 140:
-                        break
-                draw.rounded_rectangle([x, y, x + chip_w, y + 88], radius=10, outline=BORDER, width=2)
-                draw.text((x + 36, y + 18), item, font=fnt, fill=TEXT)
-                x += chip_w + 24
-                row_h = 88
+                fnt = font("mono", 38)
+                cw = int(draw.textlength(item, font=fnt)) + 60
+                if x + cw > box[2] - 80:
+                    x, row = px, row + 100
+                draw.rounded_rectangle([x, y + row, x + cw, y + row + 74], radius=12,
+                                       outline=(222, 224, 234), width=2)
+                draw.text((x + 30, y + row + 16), item, font=fnt, fill=TEXT_DARK)
+                x += cw + 20
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
     return out_path
@@ -146,16 +174,17 @@ def render_split_frames(
     fps: int = 10,
     counter: tuple[int, int] | None = None,
 ) -> Path:
-    """Kinetic split card, Teams-intro style:
-    - heading lands word by word, gold underline sweeps under it
-    - numbered bullets slide in staggered
-    - app screenshot rides a Ken Burns zoom inside a gold-framed panel
-      with a LIVE badge
-    - a thin film-progress line runs along the bottom
+    """Kinetic split card on the indigo field, Teams-intro style:
+    left  — FEATURE label, word-by-word heading landing with a gold
+            underline sweep, numbered bullets staggering in
+    right — white panel with the app's REAL screenshot riding a Ken Burns
+            zoom, gold corner brackets + LIVE badge
+    bottom — thin gold film-progress line
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    base_img, _ = _deco_base(counter)
+    base_img, _ = _base_bg(counter)
     total_frames = max(int(round(total_seconds * fps)), fps)
+    heading = heading[:70]
 
     shot: Image.Image | None = None
     if shot_path and Path(shot_path).exists():
@@ -164,62 +193,63 @@ def render_split_frames(
         except Exception:
             shot = None
 
-    panel = (920, 230, 1780, 910)
-    tx, max_w = 150, 660
-    hf = font("sans", 74)
+    panel = (940, 190, 1800, 880)
+    tx, max_w = 130, 700
+    hf = font("sans", 72)
     bf = font("sans", 44)
     words = heading.split() or ["Demo"]
 
     def draw_text(d: ImageDraw.ImageDraw, p: float) -> None:
-        d.text((tx, 250), "FEATURE", font=font("sans", 34), fill=_blend(ACCENT, min(p * 4, 1)))
-        x, y = tx, 330
+        d.text((tx, 210), "FEATURE", font=font("sans", 34), fill=_blend(GOLD, min(p * 4, 1)))
+        x, y = tx, 300
         for wi, word in enumerate(words):
             wp = min(max(p * len(words) * 1.5 - wi * 0.7, 0), 1)
             if wp > 0:
-                d.text((x, y + 24 * (1 - wp)), word, font=hf, fill=_blend(TEXT, wp))
+                d.text((x, y + 24 * (1 - wp)), word, font=hf, fill=_blend(TEXT_LIGHT, wp))
             x += d.textlength(word + " ", font=hf)
         sweep = min(max(p * len(words) * 1.5 - len(words) * 0.8, 0), 1)
         if sweep > 0:
-            d.rectangle([tx, y + 116, tx + max_w * sweep, y + 122], fill=ACCENT)
-        by = y + 186
+            d.rectangle([tx, y + 112, tx + max_w * sweep, y + 118], fill=GOLD)
+        by = y + 180
         for bi, bullet in enumerate(bullets[:5]):
             bp = min(max(p * (len(bullets) + 1.5) - 1 - bi * 0.9, 0), 1)
             if bp <= 0:
                 continue
-            d.rounded_rectangle([tx, by, tx + 56, by + 44], radius=8,
-                                outline=_blend(ACCENT, bp), width=2)
-            d.text((tx + 18, by + 6), str(bi + 1), font=font("mono", 28), fill=_blend(ACCENT, bp))
-            for li, line in enumerate(_wrap(d, bullet, bf, max_w - 80)[:2]):
-                d.text((tx + 72, by + li * 2 - 2), line, font=bf, fill=_blend(TEXT, bp))
-            by += 74
+            d.rounded_rectangle([tx, by, tx + 54, by + 42], radius=8,
+                                outline=_blend(GOLD, bp), width=2)
+            d.text((tx + 17, by + 5), str(bi + 1), font=font("mono", 26), fill=_blend(GOLD, bp))
+            for li, line in enumerate(_wrap(d, bullet, bf, max_w - 76)[:2]):
+                d.text((tx + 70, by + li * 2 - 2), line, font=bf, fill=_blend(TEXT_LIGHT, bp))
+            by += 70
 
     def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float) -> None:
         x0, y0, x1, y1 = panel
-        d.rounded_rectangle([x0, y0, x1, y1], radius=14, fill=(13, 16, 22))
+        _panel(img, d, (x0, y0, x1, y1))
         if shot is not None:
             zoom = 1.0 + 0.09 * p
             fit = shot.copy()
-            fit.thumbnail((x1 - x0 - 30, y1 - y0 - 30))
+            fit.thumbnail((x1 - x0 - 44, y1 - y0 - 44))
             fit = fit.resize((int(fit.width * zoom), int(fit.height * zoom)))
             fx = x0 + (x1 - x0 - fit.width) // 2
             fy = y0 + (y1 - y0 - fit.height) // 2
             img.paste(fit, (fx, fy))
-            k = 26
+            k = 24
             bl, bt, br, bb = fx, fy, fx + fit.width, fy + fit.height
             for (cx, cy, dx, dy) in ((bl, bt, 1, 1), (br, bt, -1, 1), (bl, bb, 1, -1), (br, bb, -1, -1)):
-                d.line([(cx, cy + dy * k), (cx, cy)], fill=ACCENT, width=4)
-                d.line([(cx, cy), (cx + dx * k, cy)], fill=ACCENT, width=4)
-            d.rounded_rectangle([bl + 14, bt + 14, bl + 118, bt + 52], radius=8, fill=(9, 10, 15))
-            d.ellipse([bl + 26, bt + 24, bl + 40, bt + 38], fill=ACCENT)
-            d.text((bl + 50, bt + 18), "LIVE", font=font("mono", 22), fill=TEXT)
+                d.line([(cx, cy + dy * k), (cx, cy)], fill=GOLD, width=4)
+                d.line([(cx, cy), (cx + dx * k, cy)], fill=GOLD, width=4)
+            d.rounded_rectangle([bl + 12, bt + 12, bl + 114, bt + 50], radius=8, fill=(9, 10, 15))
+            d.ellipse([bl + 24, bt + 22, bl + 38, bt + 36], fill=GOLD)
+            d.text((bl + 46, bt + 16), "LIVE", font=font("mono", 22), fill=TEXT_LIGHT)
         else:
-            d.text((x0 + 40, y0 + 40), "(app preview)", font=font("sans", 36), fill=MUTED)
-        d.rounded_rectangle([x0, y0, x1, y1], radius=14,
-                            outline=_blend((251, 191, 36), min(p * 3, 1)), width=3)
+            d.text((x0 + 40, y0 + 40), "(app preview)", font=font("sans", 36), fill=(150, 150, 170))
+        d.rounded_rectangle([x0, y0, x1, y1], radius=18,
+                            outline=_blend(GOLD, min(p * 3, 1)), width=3)
 
     def render_frame(idx: int, path: Path) -> None:
         img = base_img.copy()
         d = ImageDraw.Draw(img)
+        _ornaments(d, idx)
         p = idx / max(total_frames - 1, 1)
         if idx >= 2:
             draw_text(d, min(p * 2.4, 1.0))
@@ -227,7 +257,7 @@ def render_split_frames(
             draw_shot(d, img, min(
                 (idx - int(total_frames * 0.20)) / max(total_frames - int(total_frames * 0.20) - 8, 1),
                 1.0))
-        d.rectangle([48, H - 56, 48 + (W - 96) * p, H - 50], fill=ACCENT)
+        d.rectangle([48, H - 40, 48 + (W - 96) * p, H - 34], fill=GOLD)
         img.save(path)
 
     for f in range(total_frames):
@@ -237,22 +267,23 @@ def render_split_frames(
 
 def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Path:
     """Single terminal-window frame (for timeline thumbnails)."""
-    img = Image.new("RGB", (W, H), BG)
-    draw = ImageDraw.Draw(img)
-    tx0, ty0, tx1, ty1 = 140, 220, W - 140, H - 180
-    draw.rounded_rectangle([tx0, ty0, tx1, ty1], radius=12, fill=TERM_BG, outline=BORDER, width=2)
+    img, draw = _base_bg()
+    _ornaments(draw, 20)
+    box = (220, 200, W - 220, H - 200)
+    _panel(img, draw, box, radius=14)
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4], radius=12, fill=TERM_BG)
     for i, color in enumerate(((239, 68, 68), (245, 158, 11), (34, 197, 94))):
-        cx = tx0 + 44 + i * 44
-        draw.ellipse([cx, ty0 + 28, cx + 20, ty0 + 48], fill=color)
-    draw.text((tx1 - 330, ty0 + 20), "demo — terminal", font=font("mono", 30), fill=MUTED)
-    mono = font("mono", 42)
-    draw.text((tx0 + 56, ty0 + 104), f"$ {command}", font=mono, fill=TEXT)
-    ly = ty0 + 188
+        cx = box[0] + 52 + i * 44
+        d.ellipse([cx, box[1] + 30, cx + 20, box[1] + 50], fill=color)
+    mono = font("mono", 40)
+    d.text((box[0] + 56, box[1] + 110), f"$ {command}", font=mono, fill=TEXT_LIGHT)
+    ly = box[1] + 200
     for line in lines[:8]:
-        for wrap_line in _wrap(draw, line, mono, tx1 - tx0 - 112)[:2]:
-            draw.text((tx0 + 56, ly), wrap_line, font=mono, fill=MUTED)
-            ly += 58
-        if ly > ty1 - 60:
+        for wrap_line in _wrap(d, line, mono, box[2] - box[0] - 112)[:2]:
+            d.text((box[0] + 56, ly), wrap_line, font=mono, fill=MUTED_LIGHT)
+            ly += 56
+        if ly > box[3] - 70:
             break
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
@@ -260,140 +291,31 @@ def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Pat
 
 
 def render_terminal_frames(command: str, lines: list[str], out_dir: Path, total_seconds: float, fps: int = 10) -> Path:
-    """Progressive-reveal terminal window; returns the frames directory.
-
-    Typing the command takes ~20% of the time, output lines reveal over the rest.
-    """
+    """Progressive-reveal terminal animation on the indigo field."""
+    still = render_terminal_still(command, [], out_dir / "_base.png")
     out_dir.mkdir(parents=True, exist_ok=True)
     total_frames = max(int(math.ceil(total_seconds * fps)), fps)
     type_frames = max(total_frames // 5, 1)
     n_lines = max(len(lines), 1)
     per_line = max((total_frames - type_frames) / n_lines, 1)
-
+    base = Image.open(still)
     for idx in range(total_frames):
-        img = Image.new("RGB", (W, H), BG)
-        draw = ImageDraw.Draw(img)
-        # Terminal window card.
-        tx0, ty0, tx1, ty1 = 140, 220, W - 140, H - 180
-        draw.rounded_rectangle([tx0, ty0, tx1, ty1], radius=12, fill=TERM_BG, outline=BORDER, width=2)
-        for i, color in enumerate(((239, 68, 68), (245, 158, 11), (34, 197, 94))):
-            cx = tx0 + 44 + i * 44
-            draw.ellipse([cx, ty0 + 28, cx + 20, ty0 + 48], fill=color)
-        draw.text((tx1 - 330, ty0 + 20), "demo — terminal", font=font("mono", 30), fill=MUTED)
-
-        mono = font("mono", 42)
-        x, y = tx0 + 56, ty0 + 104
-        # 1) Command typed char-by-char.
+        img = base.copy()
+        d = ImageDraw.Draw(img)
+        mono = font("mono", 40)
+        x, y = 276, 318
         chars = max(int(len(command) * (idx + 1) / type_frames), 1) if idx < type_frames else len(command)
         typed = command[:chars]
-        draw.text((x, y), f"$ {typed}", font=mono, fill=TEXT)
-        cursor_x = x + int(draw.textlength(f"$ {typed}", font=mono))
-        if idx < total_frames - 1 and (idx // 2) % 2 == 0:
-            draw.rectangle([cursor_x + 10, y + 6, cursor_x + 30, y + 52], fill=ACCENT)
+        d.text((x, y), f"$ {typed}", font=mono, fill=TEXT_LIGHT)
         if idx >= type_frames:
-            # 2) Output lines revealed progressively.
             shown = min(int((idx - type_frames) / per_line) + 1, n_lines)
-            ly = y + 84
+            ly = y + 96
             for line in lines[:shown]:
-                for wrap_line in _wrap(draw, line, mono, tx1 - x - 56)[:2]:
-                    draw.text((x, ly), wrap_line, font=mono, fill=MUTED if not line.startswith("$") else TEXT)
-                    ly += 58
-                if ly > ty1 - 60:
+                for wrap_line in _wrap(d, line, mono, 1400)[:2]:
+                    d.text((x, ly), wrap_line, font=mono, fill=MUTED_LIGHT)
+                    ly += 56
+                if ly > 860:
                     break
         img.save(out_dir / f"f_{idx:05d}.png")
-    return out_dir
-
-
-def render_card_frames(
-    kind: str,
-    heading: str,
-    bullets: list[str],
-    out_dir: Path,
-    total_seconds: float,
-    fps: int = 10,
-    counter: tuple[int, int] | None = None,
-) -> Path:
-    """Progressive-reveal card animation: elements fade/slide in one by one
-    (accent bar grows, heading lands, bullets appear per beat), then hold.
-    The result reads as a designed deck, not a static slide."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    base_img, _ = _deco_base(counter)
-    left, max_w = 160, W - 320
-    total_frames = max(int(round(total_seconds * fps)), fps)
-
-    plans: list[tuple[int, int, Any]] = []  # (start, end, draw_fn(draw, p))
-
-    def fade_text(pos, text, fnt, fill, dx=0.0, dy=0.0):
-        def _fn(d: ImageDraw.ImageDraw, p: float) -> None:
-            d.text((pos[0] + dx * (1 - p), pos[1] + dy * (1 - p)), text, font=fnt, fill=_blend(fill, p))
-        return _fn
-
-    def grow_bar(pos, w=96):
-        def _fn(d: ImageDraw.ImageDraw, p: float) -> None:
-            d.rectangle([pos[0], pos[1], pos[0] + w * p, pos[1] + 6], fill=ACCENT)
-        return _fn
-
-    def fade_dot(pos):
-        def _fn(d: ImageDraw.ImageDraw, p: float) -> None:
-            d.ellipse([pos[0], pos[1], pos[0] + 14, pos[1] + 14], fill=_blend(ACCENT, p))
-        return _fn
-
-    def fade_chip(pos, label, fnt, w):
-        def _fn(d: ImageDraw.ImageDraw, p: float) -> None:
-            d.rounded_rectangle([pos[0] + 40 * (1 - p), pos[1], pos[0] + 40 * (1 - p) + w, pos[1] + 88],
-                                radius=10, outline=_blend((60, 62, 72), p), width=2)
-            d.text((pos[0] + 40 * (1 - p) + 36, pos[1] + 18), label, font=fnt, fill=_blend(TEXT, p))
-        return _fn
-
-    if kind == "title":
-        hf = font("sans", 110)
-        lines = _wrap(ImageDraw.Draw(Image.new("RGB", (8, 8))), heading or "Untitled Project", hf, max_w)[:2]
-        y = H // 2 - 60
-        plans.append((0, int(total_frames * 0.12), grow_bar((left, y - 74))))
-        for line in lines:
-            plans.append((int(total_frames * 0.10), int(total_frames * 0.34), fade_text((left, y), line, hf, TEXT)))
-            y += 140
-        y += 24
-        tf = font("sans", 52)
-        for line in _wrap(ImageDraw.Draw(Image.new("RGB", (8, 8))), bullets[0] if bullets else "", tf, max_w)[:2]:
-            plans.append((int(total_frames * 0.38), int(total_frames * 0.58), fade_text((left, y), line, tf, MUTED)))
-            y += 66
-    else:
-        lf = font("sans", 44)
-        plans.append((0, int(total_frames * 0.14), fade_text((left, 170), (heading or "").upper(), lf, ACCENT)))
-        plans.append((int(total_frames * 0.12), int(total_frames * 0.26), fade_text((left, 240), "─" * 60, font("sans", 24), BORDER)))
-        y = 300
-        if kind == "bullets":
-            bf = font("sans", 58)
-            beat = max(int(total_frames * 0.10), 3)
-            for bi, bullet in enumerate(bullets[:5]):
-                start = int(total_frames * 0.22) + bi * beat
-                end = start + beat
-                plans.append((start, end, fade_dot((left, y + 26))))
-                for line in _wrap(ImageDraw.Draw(Image.new("RGB", (8, 8))), bullet, bf, max_w - 60)[:2]:
-                    plans.append((start, end, fade_text((left + 56, y), line, bf, TEXT, dx=44)))
-                    y += 72
-                y += 26
-        else:  # stack chips
-            cf = font("mono", 46)
-            beat = max(int(total_frames * 0.08), 2)
-            x, row = left, 0
-            for ci, item in enumerate(bullets[:8]):
-                start = int(total_frames * 0.22) + ci * beat
-                cw = 72 + int(len(item) * 24)
-                if x + cw > W - 160:
-                    x, row = left, row + 116
-                plans.append((start, start + beat, fade_chip((x, 300 + row), item, cf, cw)))
-                x += cw + 24
-    def render_frame(idx: int, path: Path) -> None:
-        img = base_img.copy()
-        d = ImageDraw.Draw(img)
-        for start, end, fn in plans:
-            if idx >= start:
-                p = min((idx - start) / max(end - start, 1), 1.0)
-                fn(d, p)
-        img.save(path)
-
-    for f in range(total_frames):
-        render_frame(f, out_dir / f"f_{f:05d}.png")
+    (out_dir / "_base.png").unlink(missing_ok=True)
     return out_dir
