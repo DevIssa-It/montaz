@@ -5,6 +5,8 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+import hashlib
+import random
 from typing import Any
 
 from .. import project_store
@@ -44,13 +46,23 @@ def _tts_settings(project: dict[str, Any], settings: dict[str, Any]) -> tuple[st
     return engine_id, voice
 
 
+def _prosody_for(scene: dict[str, Any]) -> dict[str, str]:
+    """Deterministic per-scene voice variation so TTS never sounds monotone."""
+    seed_src = f"{scene.get('id', '')}{scene.get('narration', '')[:60]}"
+    rng = random.Random(int(hashlib.md5(seed_src.encode()).hexdigest()[:8], 16))
+    return {
+        "rate": f"{rng.choice([-9, -6, -4, 2])}%",
+        "pitch": f"{rng.choice([-3, -1, 1, 3])}Hz",
+    }
+
+
 async def _synthesize_all(scenes: list[dict[str, Any]], audio_dir: Path, engine_id: str, voice: str, keys: dict[str, str], status: RenderStatus) -> None:
     engine = tts_base.get_engine(engine_id)
     total = max(len(scenes), 1)
     for i, scene in enumerate(scenes):
         status.step(0.05 + 0.30 * i / total, f"TTS {i + 1}/{total}: {scene.get('title') or scene['id']}")
         out = audio_dir / f"{scene['id']}.{AUDIO_EXT.get(engine_id, 'mp3')}"
-        await engine.synthesize(scene["narration"], voice, str(out), keys)
+        await engine.synthesize(scene["narration"], voice, str(out), keys, prosody=_prosody_for(scene))
         scene["audio"] = out.name
 
 
@@ -89,10 +101,17 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
         seg = work / f"seg_{i:03d}.mp4"
 
         if vtype == "card":
-            card_path = work / f"card_{i:03d}.png"
             card = visual.get("card") or {}
-            cards.render_card(card.get("kind", "title"), card.get("heading", ""), card.get("bullets", []), card_path)
-            ffmpeg.segment_from_image(card_path, audio_path, seg, duration, zoom_in=(i % 2 == 0))
+            frames = cards.render_card_frames(
+                card.get("kind", "title"),
+                card.get("heading", ""),
+                card.get("bullets", []),
+                work / f"cardf_{i:03d}",
+                duration,
+                fps=10,
+                counter=(i + 1, total),
+            )
+            ffmpeg.segment_from_frames(frames, 10, audio_path, seg, duration)
         elif vtype == "terminal":
             result = terminal_capture.run_command(visual.get("command", "echo hello"), project.get("project_folder", ""))
             frames = cards.render_terminal_frames(

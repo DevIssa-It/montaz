@@ -37,3 +37,6 @@ App open source untuk membuat **video demo hackathon otomatis end-to-end** (form
 
 ## Lokasi home (2026-11-12)
 Repo dipindah ke `C:/Users/ahmad/Documents/Project/Vvideo-builder/montaz` (usulan user, sebelumnya workspace ZCode). .venv di-recreate, shortcut desktop di-regenerate, git+data utuh. Salinan lama di workspace ZCode tinggal dihapus setelah sesi ditutup (host mengunci workspace saat sesi hidup).
+
+## Anti-slop pass (2026-11-13)
+Kartu scene kini BERANIMASI (render_card_frames: progressive reveal bar/heading/bullets/chips + dot grid + footer brand + counter chip ala deck); browser capture ber-kursor-hidup (glide ke elemen, ripple gold saat klik, typewriter fill, smooth scroll, jitter natural); TTS Edge bervariasi prosody per scene (rate/pitch seeded dari scene id — tidak monoton); scriptgen punya 3 varian per beat (intro/problem/page/features/stack/outro) + humanize kontraksi + prompt humanizer AI (banned-words list AI-ism) untuk polish. Semua deterministik per project name.

@@ -29,8 +29,15 @@ class TTSEngine(abc.ABC):
         """List available voices (may hit the provider API)."""
 
     @abc.abstractmethod
-    async def synthesize(self, text: str, voice_id: str, out_path: str, keys: dict[str, str]) -> None:
-        """Synthesize narration audio to out_path (.mp3 or .wav)."""
+    async def synthesize(
+        self, text: str, voice_id: str, out_path: str, keys: dict[str, str],
+        prosody: dict[str, str] | None = None,
+    ) -> None:
+        """Synthesize narration audio to out_path (.mp3 or .wav).
+
+        prosody may carry engine-specific rate/pitch hints; engines that
+        do not support them ignore it."""
+
 
     async def test_connection(self, keys: dict[str, str]) -> None:
         """Raise TTSError on failure; default = listing voices."""

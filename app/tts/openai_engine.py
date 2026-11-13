@@ -38,7 +38,10 @@ class OpenAIEngine(TTSEngine):
         if resp.status_code != 200:
             raise TTSError(http_error_message(resp.status_code, resp.text))
 
-    async def synthesize(self, text: str, voice_id: str, out_path: str, keys: dict[str, str]) -> None:
+    async def synthesize(
+        self, text: str, voice_id: str, out_path: str, keys: dict[str, str],
+        prosody: dict[str, str] | None = None,  # not used by cloud engines
+    ) -> None:
         key = self._key(keys)
         if not text.strip():
             raise TTSError("Teks narasi kosong.")

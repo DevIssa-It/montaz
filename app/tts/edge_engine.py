@@ -32,11 +32,18 @@ class EdgeEngine(TTSEngine):
             ]
         return _VOICES_CACHE
 
-    async def synthesize(self, text: str, voice_id: str, out_path: str, keys: dict[str, str]) -> None:
+    async def synthesize(
+        self, text: str, voice_id: str, out_path: str, keys: dict[str, str],
+        prosody: dict[str, str] | None = None,
+    ) -> None:
         if not text.strip():
             raise TTSError("Teks narasi kosong.")
         try:
-            await edge_tts.Communicate(text, voice_id).save(out_path)
+            pros = prosody or {}
+            await edge_tts.Communicate(
+                text, voice_id,
+                rate=pros.get("rate"), pitch=pros.get("pitch"),
+            ).save(out_path)
         except Exception as exc:  # noqa: BLE001
             raise TTSError(f"Edge TTS gagal: {exc}") from exc
 
