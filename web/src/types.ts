@@ -46,6 +46,8 @@ export interface Project {
   bgm: { enabled: boolean; path: string; volume: number }
   scenes: Scene[]
   created_at: number
+  updated_at?: number
+  rendered?: boolean
 }
 
 export interface Settings {

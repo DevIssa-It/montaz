@@ -5,19 +5,18 @@ import { SettingsModal } from "@/components/SettingsModal"
 import { SplashScreen } from "@/components/SplashScreen"
 import { Toaster } from "@/components/ui/sonner"
 import { api } from "@/lib/api"
-import { ProjectsPage } from "@/pages/ProjectsPage"
-import { RenderPage } from "@/pages/RenderPage"
+import { HomePage } from "@/pages/HomePage"
 import { StudioPage } from "@/pages/studio/StudioPage"
 import type { Project } from "@/types"
 
-type View = "projects" | "studio" | "render"
+type View = "home" | "studio"
 type BootPhase = "splash" | "fading" | "ready"
 
 // Activity bar: icon rail, VS Code-style. Icons echo the mark's geometry.
 const RAIL: { id: View; label: string; icon: ReactElement }[] = [
   {
-    id: "projects",
-    label: "Projects",
+    id: "home",
+    label: "Home",
     icon: (
       <g>
         <rect x="3" y="4.5" width="18" height="15" rx="2" />
@@ -35,11 +34,6 @@ const RAIL: { id: View; label: string; icon: ReactElement }[] = [
       </g>
     ),
   },
-  {
-    id: "render",
-    label: "Render",
-    icon: <path d="M13 2.5 L5.5 13.5 H11.5 L10 21.5 L18.5 9.5 H12.5 Z" />,
-  },
 ]
 
 const ACTIVE_KEY = "montaz.activeProjectId"
@@ -47,7 +41,7 @@ const BOOTED_KEY = "montaz.booted"
 const RAIL_OPEN_KEY = "montaz.railOpen"
 
 export default function App() {
-  const [view, setView] = useState<View>("projects")
+  const [view, setView] = useState<View>("home")
   const [projects, setProjects] = useState<Project[]>([])
   // SSOT: the active project (full object incl. scenes) lives here and is
   // passed down; pages mutate it only through onProjectUpdated.
@@ -59,14 +53,6 @@ export default function App() {
   const [railOpen, setRailOpen] = useState<boolean>(
     () => localStorage.getItem(RAIL_OPEN_KEY) === "1"
   )
-
-  const toggleRail = useCallback(() => {
-    setRailOpen((prev) => {
-      const next = !prev
-      localStorage.setItem(RAIL_OPEN_KEY, next ? "1" : "0")
-      return next
-    })
-  }, [])
   const [boot, setBoot] = useState<BootPhase>(() =>
     sessionStorage.getItem(BOOTED_KEY) ? "ready" : "splash"
   )
@@ -85,6 +71,19 @@ export default function App() {
   useEffect(() => {
     if (boot !== "ready") sessionStorage.setItem(BOOTED_KEY, "1")
   }, [boot])
+
+  const toggleRail = useCallback(() => {
+    setRailOpen((prev) => {
+      const next = !prev
+      localStorage.setItem(RAIL_OPEN_KEY, next ? "1" : "0")
+      return next
+    })
+  }, [])
+
+  const setRailOpenDirect = useCallback((open: boolean) => {
+    setRailOpen(open)
+    localStorage.setItem(RAIL_OPEN_KEY, open ? "1" : "0")
+  }, [])
 
   const refreshProjects = useCallback(() => {
     void api
@@ -119,10 +118,6 @@ export default function App() {
     setActiveProjectId(id)
     setView("studio")
   }
-  const openRender = (id: string) => {
-    setActiveProjectId(id)
-    setView("render")
-  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -138,7 +133,10 @@ export default function App() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setView(item.id)}
+            onClick={() => {
+              setView(item.id)
+              setRailOpenDirect(false)
+            }}
             title={item.label}
             aria-current={view === item.id ? "page" : undefined}
             className={`relative flex h-10 shrink-0 items-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
@@ -152,7 +150,7 @@ export default function App() {
             {view === item.id && (
               <span className="absolute left-0 h-5 w-0.5 rounded-full bg-primary" />
             )}
-            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin={item.id === "render" ? "round" : undefined}>
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               {item.icon}
             </svg>
             {railOpen && <span className="truncate text-sm">{item.label}</span>}
@@ -206,26 +204,24 @@ export default function App() {
               local
             </span>
           </div>
-          {activeProject && (
+          {view === "studio" && activeProject && (
             <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-              <span>active:</span>
+              <span>editing:</span>
               <span className="font-medium text-foreground">{activeProject.name}</span>
             </div>
           )}
         </header>
 
         <main className="min-h-0 flex-1">
-          {view === "projects" && (
-            <ProjectsPage
+          {view === "home" && (
+            <HomePage
               projects={projects}
               onRefresh={refreshProjects}
               activeProjectId={activeProjectId}
               onOpenStudio={openStudio}
-              onOpenRender={openRender}
             />
           )}
           {view === "studio" && <StudioPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
-          {view === "render" && <RenderPage project={activeProject} onProjectUpdated={onProjectUpdated} />}
         </main>
       </div>
 

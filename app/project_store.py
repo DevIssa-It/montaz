@@ -98,8 +98,15 @@ def update_project(project_id: str, updates: dict[str, Any]) -> dict[str, Any] |
             scene["visual"] = visual
             clean.append(scene)
         project["scenes"] = clean
+    project["updated_at"] = time.time()
     _project_path(project_id).write_text(json.dumps(project, indent=2), encoding="utf-8")
     return project
+
+
+def has_rendered_video(project_id: str) -> bool:
+    """True once a final video exists in the project's output folder."""
+    output = project_dir(project_id) / "output"
+    return any(output.glob("final*.mp4"))
 
 
 def delete_project(project_id: str) -> bool:

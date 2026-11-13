@@ -115,7 +115,11 @@ def create_project(body: ProjectCreate) -> dict:
 
 @app.get("/api/projects")
 def list_projects() -> list[dict]:
-    return project_store.list_projects()
+    items = []
+    for p in project_store.list_projects():
+        p["rendered"] = project_store.has_rendered_video(p["id"])
+        items.append(p)
+    return items
 
 
 @app.get("/api/projects/{pid}")
@@ -123,6 +127,7 @@ def get_project(pid: str) -> dict:
     project = project_store.get_project(pid)
     if project is None:
         raise HTTPException(status_code=404, detail="Project tidak ditemukan.")
+    project["rendered"] = project_store.has_rendered_video(pid)
     return project
 
 

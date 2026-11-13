@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { RenderStrip } from "@/components/RenderStrip"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { api, visualLabel } from "@/lib/api"
 import type { Project, Scene } from "@/types"
@@ -252,6 +253,9 @@ export function StudioPage({ project, onProjectUpdated }: Props) {
           bgmEnabled={project.bgm.enabled}
         />
       </div>
+
+      {/* Render strip — pipeline-first: one click, no page switch */}
+      <RenderStrip project={project} onProjectUpdated={onProjectUpdated} />
     </div>
   )
 }
