@@ -50,9 +50,12 @@ def _prosody_for(scene: dict[str, Any]) -> dict[str, str]:
     """Deterministic per-scene voice variation so TTS never sounds monotone."""
     seed_src = f"{scene.get('id', '')}{scene.get('narration', '')[:60]}"
     rng = random.Random(int(hashlib.md5(seed_src.encode()).hexdigest()[:8], 16))
+    rate = rng.choice([-9, -6, -4, 2])
+    pitch = rng.choice([-3, -1, 1, 3])
+    # edge-tts requires an explicit sign, e.g. "+2%" not "2%".
     return {
-        "rate": f"{rng.choice([-9, -6, -4, 2])}%",
-        "pitch": f"{rng.choice([-3, -1, 1, 3])}Hz",
+        "rate": f"{rate:+d}%",
+        "pitch": f"{pitch:+d}Hz",
     }
 
 
@@ -76,7 +79,10 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
     pdir = project_store.project_dir(project_id)
     audio_dir, assets_dir, output_dir = pdir / "audio", pdir / "assets", pdir / "output"
     work = output_dir / "work"
-    work.mkdir(parents=True, exist_ok=True)
+    # Recreate the runtime layout ourselves — folders may be missing after
+    # a cache clear, and TTS/capture write into them directly.
+    for folder in (audio_dir, assets_dir, output_dir, work):
+        folder.mkdir(parents=True, exist_ok=True)
     scenes = [dict(s) for s in project["scenes"]]
 
     engine_id, voice = _tts_settings(project, settings)

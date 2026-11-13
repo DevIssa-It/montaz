@@ -1,6 +1,8 @@
 """Edge TTS engine — free Microsoft neural voices, no API key (default engine)."""
 from __future__ import annotations
 
+import asyncio
+
 import edge_tts
 
 from .base import TTSEngine, TTSError, Voice, register
@@ -38,14 +40,22 @@ class EdgeEngine(TTSEngine):
     ) -> None:
         if not text.strip():
             raise TTSError("Teks narasi kosong.")
-        try:
-            pros = prosody or {}
-            await edge_tts.Communicate(
-                text, voice_id,
-                rate=pros.get("rate"), pitch=pros.get("pitch"),
-            ).save(out_path)
-        except Exception as exc:  # noqa: BLE001
-            raise TTSError(f"Edge TTS gagal: {exc}") from exc
+        pros = prosody or {}
+        # Microsoft's endpoint flakes occasionally (socket timeouts); retry
+        # briefly with backoff instead of failing the whole render.
+        last_exc: Exception | None = None
+        for attempt, delay in enumerate((0, 1.5, 4.0), start=1):
+            if delay:
+                await asyncio.sleep(delay)
+            try:
+                await edge_tts.Communicate(
+                    text, voice_id,
+                    rate=pros.get("rate"), pitch=pros.get("pitch"),
+                ).save(out_path)
+                return
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+        raise TTSError(f"Edge TTS gagal setelah {attempt}x percobaan: {last_exc}") from last_exc
 
 
 register(EdgeEngine())
