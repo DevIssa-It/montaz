@@ -136,6 +136,7 @@ def run_render(project_id: str, settings: dict[str, Any], status: RenderStatus, 
                 duration,
                 fps=10,
                 counter=(i + 1, total),
+                variant=i % 2,
             )
             ffmpeg.segment_from_frames(frames, 10, audio_path, seg, duration)
         elif vtype == "terminal":

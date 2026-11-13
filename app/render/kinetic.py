@@ -82,6 +82,7 @@ def render_split_frames(
     total_seconds: float,
     fps: int = 10,
     counter: tuple[int, int] | None = None,
+    variant: int = 0,
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     base_img, _ = _base_bg(counter)
@@ -114,7 +115,10 @@ def render_split_frames(
                 wp = min(max(p * len(words) * 1.5 - global_index * 0.7, 0), 1)
                 if wp > 0:
                     col = GOLD if word == gold_word else _blend(TEXT_LIGHT, wp)
-                    d.text((x, ly + 22 * (1 - wp)), word, font=hf, fill=col)
+                    if variant == 0:
+                        d.text((x, ly + 22 * (1 - wp)), word, font=hf, fill=col)   # drop
+                    else:
+                        d.text((x + 30 * (1 - wp), ly), word, font=hf, fill=col)   # slide
                 x += d.textlength(word + " ", font=hf)
                 global_index += 1
         sweep = min(max(p * len(words) * 1.5 - len(words) * 0.8, 0), 1)
@@ -131,9 +135,10 @@ def render_split_frames(
                 _sticker_sparkle(d, sx, sy, 16 + (k % 3) * 5, sp)
             elif sp > 0:
                 _sticker_heart(d, sx, sy, 15 + (k % 2) * 6, sp)
-        _sticker_heart(d, 100, 470, 44, min(p * 2, 1))
-        _sticker_sparkle(d, 745, 430, 30, min(max(p * 4 - 1, 0), 1))
-        _sticker_ring(d, 90, 300, 14, min(max(p * 5 - 2, 0), 1))
+        # stickers live in the safe margins (x < 130 / above the heading)
+        _sticker_heart(d, 62, 380, 40, min(p * 2, 1))
+        _sticker_sparkle(d, tx + max_w - 70, 190, 28, min(max(p * 4 - 1, 0), 1))
+        _sticker_ring(d, 66, 262, 13, min(max(p * 5 - 2, 0), 1))
         by = 295 + len(hlines) * (hsize + 14) + 70
         for bi, bullet in enumerate(bullets[:5]):
             bp = min(max(p * (len(bullets) + 1.6) - 1 - bi * 0.9, 0), 1)
@@ -153,6 +158,10 @@ def render_split_frames(
 
     def draw_shot(d: ImageDraw.ImageDraw, img: Image.Image, p: float, phase: float) -> None:
         x0, y0, x1, y1 = PANEL_BOX
+        if variant == 0:
+            x0 += int(80 * (1 - min(phase * 1.8, 1)))   # panel slides from right
+        else:
+            y0 += int(70 * (1 - min(phase * 1.8, 1)))   # panel rises from below
         _panel(img, d, (x0, y0, x1, y1))
         if shot_imgs:
             shot = shot_imgs[0] if (phase < 0.55 and len(shot_imgs) > 1) else shot_imgs[-1]

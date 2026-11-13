@@ -173,12 +173,13 @@ def render_split_frames(
     total_seconds: float,
     fps: int = 10,
     counter: tuple[int, int] | None = None,
+    variant: int = 0,
 ) -> Path:
     """Kinetic split card (Teams-intro style) — implemented in kinetic.py."""
     # Lazy import: kinetic imports shared helpers from this module.
     from .kinetic import render_split_frames as _impl
 
-    return _impl(heading, bullets, shots, out_dir, total_seconds, fps, counter)
+    return _impl(heading, bullets, shots, out_dir, total_seconds, fps, counter, variant)
 
 
 def render_terminal_still(command: str, lines: list[str], out_path: Path) -> Path:

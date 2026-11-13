@@ -10,7 +10,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-XFADE = 0.4  # crossfade seconds
+XFADE = 0.3  # crossfade seconds
 PAD = 0.6    # breathing room after narration per scene
 FPS = 30
 TARGET = "1920:1080"
@@ -109,7 +109,7 @@ def concat_segments(segment_paths: list[Path], out_path: Path) -> Path:
         return _concat_hardcut(segment_paths, out_path)
 
 
-TRANSITIONS = ["slideleft", "smoothleft", "circleopen", "fade", "smoothup"]
+TRANSITIONS = ["slideleft", "smoothleft", "slideup", "smoothright", "radial"]
 
 
 def _concat_xfade(segment_paths: list[Path], out_path: Path) -> Path:
